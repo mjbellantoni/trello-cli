@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "trello_cli/cli"
+
+TrelloCli::Cli.start(ARGV)
