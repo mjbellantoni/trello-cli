@@ -25,9 +25,9 @@ class TrelloCli::Api::Config
       raise TrelloCli::ConfigError, ".trello.yml not found at #{config_path}"
     end
 
-    yaml = YAML.load_file(config_path)
-    @board_id = yaml["board_id"]
-    @default_list = yaml["default_list"]
+    yaml = YAML.safe_load_file(config_path)
+    @board_id = yaml["board_id"] or raise TrelloCli::ConfigError, "board_id not found in .trello.yml"
+    @default_list = yaml["default_list"] or raise TrelloCli::ConfigError, "default_list not found in .trello.yml"
   end
 
   def load_env_config
