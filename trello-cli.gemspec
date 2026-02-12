@@ -5,10 +5,10 @@ require_relative "lib/trello_cli/version"
 Gem::Specification.new do |spec|
   spec.name = "trello-cli"
   spec.version = TrelloCli::VERSION
-  spec.authors = ["MJB"]
+  spec.authors = ["mjbellantoni@gmail"]
   spec.summary = "CLI for Trello API"
-  spec.description = "A command-line interface for managing Trello cards, checklists, comments, and attachments"
-  spec.homepage = "https://github.com/mjb/trello-cli"
+  spec.description = "A command-line interface for managing Trello"
+  spec.homepage = "https://github.com/mjbellantoni/trello-cli"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0"
 
