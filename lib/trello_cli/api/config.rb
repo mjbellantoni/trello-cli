@@ -29,7 +29,7 @@ class TrelloCli::Api::Config
   end
 
   def board_id
-    ENV["TRELLO_BOARD_ID"]
+    ENV["TRELLO_DEFAULT_BOARD_ID"]
   end
 
   def default_list

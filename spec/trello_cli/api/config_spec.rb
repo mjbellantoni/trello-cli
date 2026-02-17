@@ -9,7 +9,7 @@ RSpec.describe TrelloCli::Api::Config do
       allow(YAML).to receive(:safe_load_file).and_return(
         "TRELLO_API_KEY" => "from-file",
         "TRELLO_TOKEN" => "tok-from-file",
-        "TRELLO_BOARD_ID" => "board-from-file",
+        "TRELLO_DEFAULT_BOARD_ID" => "board-from-file",
         "TRELLO_DEFAULT_LIST" => "list-from-file"
       )
 
@@ -17,12 +17,12 @@ RSpec.describe TrelloCli::Api::Config do
 
       expect(ENV["TRELLO_API_KEY"]).to eq("from-file")
       expect(ENV["TRELLO_TOKEN"]).to eq("tok-from-file")
-      expect(ENV["TRELLO_BOARD_ID"]).to eq("board-from-file")
+      expect(ENV["TRELLO_DEFAULT_BOARD_ID"]).to eq("board-from-file")
       expect(ENV["TRELLO_DEFAULT_LIST"]).to eq("list-from-file")
     ensure
       ENV.delete("TRELLO_API_KEY")
       ENV.delete("TRELLO_TOKEN")
-      ENV.delete("TRELLO_BOARD_ID")
+      ENV.delete("TRELLO_DEFAULT_BOARD_ID")
       ENV.delete("TRELLO_DEFAULT_LIST")
     end
 
@@ -83,14 +83,14 @@ RSpec.describe TrelloCli::Api::Config do
     it "converts non-string values to strings" do
       allow(File).to receive(:exist?).and_return(true)
       allow(YAML).to receive(:safe_load_file).and_return(
-        "TRELLO_BOARD_ID" => 12345
+        "TRELLO_DEFAULT_BOARD_ID" => 12345
       )
 
       described_class.load
 
-      expect(ENV["TRELLO_BOARD_ID"]).to eq("12345")
+      expect(ENV["TRELLO_DEFAULT_BOARD_ID"]).to eq("12345")
     ensure
-      ENV.delete("TRELLO_BOARD_ID")
+      ENV.delete("TRELLO_DEFAULT_BOARD_ID")
     end
   end
 
@@ -117,14 +117,14 @@ RSpec.describe TrelloCli::Api::Config do
       allow(File).to receive(:exist?).and_return(false)
       ENV["TRELLO_API_KEY"] = "key-1"
       ENV["TRELLO_TOKEN"] = "tok-1"
-      ENV["TRELLO_BOARD_ID"] = "board-1"
+      ENV["TRELLO_DEFAULT_BOARD_ID"] = "board-1"
       ENV["TRELLO_DEFAULT_LIST"] = "list-1"
     end
 
     after do
       ENV.delete("TRELLO_API_KEY")
       ENV.delete("TRELLO_TOKEN")
-      ENV.delete("TRELLO_BOARD_ID")
+      ENV.delete("TRELLO_DEFAULT_BOARD_ID")
       ENV.delete("TRELLO_DEFAULT_LIST")
     end
 

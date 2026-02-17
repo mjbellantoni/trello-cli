@@ -24,14 +24,14 @@ Configuration is loaded from environment variables, with optional file-based def
 ```bash
 export TRELLO_API_KEY="your_api_key"
 export TRELLO_TOKEN="your_token"
-export TRELLO_BOARD_ID="your_board_id"
+export TRELLO_DEFAULT_BOARD_ID="your_board_id"
 export TRELLO_DEFAULT_LIST="Inbox"
 ```
 
 Alternatively, create a `.trello.yml` file in your project directory or home directory (`~/.trello.yml`). The local file takes precedence over the home file. Keys in the file are ENV var names:
 
 ```yaml
-TRELLO_BOARD_ID: "YOUR_BOARD_ID"
+TRELLO_DEFAULT_BOARD_ID: "YOUR_BOARD_ID"
 TRELLO_DEFAULT_LIST: "Inbox"
 TRELLO_API_KEY: "your_api_key"
 TRELLO_TOKEN: "your_token"
