@@ -2,46 +2,41 @@
 
 require "yaml"
 
+# Loads configuration from .trello.yml (project, then home), with ENV overrides.
 class TrelloCli::Api::Config
-  attr_reader :board_id
-  attr_reader :default_list
-  attr_reader :api_key
-  attr_reader :token
+  CONFIG_FILES = [
+    File.join(Dir.pwd, ".trello.yml"),
+    File.join(Dir.home, ".trello.yml")
+  ].freeze
 
   def self.load
+    path = CONFIG_FILES.find { |p| File.exist?(p) }
+    file_config = path ? YAML.safe_load_file(path) : {}
+
+    file_config.each do |key, value|
+      ENV[key] ||= value.to_s
+    end
+
     new
   end
 
-  def initialize
-    load_file_config
-    load_env_config
+  def self.fetch(key, default = nil)
+    ENV.fetch(key, default)
   end
 
-  private
-
-  def load_file_config
-    config_path = config_file_path
-    unless File.exist?(config_path)
-      raise TrelloCli::ConfigError, ".trello.yml not found at #{config_path}"
-    end
-
-    yaml = YAML.safe_load_file(config_path)
-    @board_id = yaml["board_id"] or raise TrelloCli::ConfigError, "board_id not found in .trello.yml"
-    @default_list = yaml["default_list"] or raise TrelloCli::ConfigError, "default_list not found in .trello.yml"
+  def api_key
+    ENV["TRELLO_API_KEY"]
   end
 
-  def load_env_config
-    @api_key = fetch_env("TRELLO_API_KEY")
-    @token = fetch_env("TRELLO_TOKEN")
+  def board_id
+    ENV["TRELLO_BOARD_ID"]
   end
 
-  def fetch_env(key)
-    ENV.fetch(key)
-  rescue KeyError
-    raise TrelloCli::ConfigError, "#{key} not set"
+  def default_list
+    ENV["TRELLO_DEFAULT_LIST"]
   end
 
-  def config_file_path
-    File.join(Dir.pwd, ".trello.yml")
+  def token
+    ENV["TRELLO_TOKEN"]
   end
 end
