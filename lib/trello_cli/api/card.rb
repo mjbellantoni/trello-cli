@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 class TrelloCli::Api::Card
+  def self.archive(client, config, card_ref)
+    ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
+    card_id = ref.to_api_id(client, config)
+    client.put("/cards/#{card_id}", { closed: true })
+  end
+
   def self.find(client, config, card_ref)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
@@ -44,5 +50,11 @@ class TrelloCli::Api::Card
 
       label["id"]
     end
+  end
+
+  def self.unarchive(client, config, card_ref)
+    ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
+    card_id = ref.to_api_id(client, config)
+    client.put("/cards/#{card_id}", { closed: false })
   end
 end

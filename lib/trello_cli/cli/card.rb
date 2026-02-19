@@ -5,6 +5,19 @@ class TrelloCli::Cli::Card < Thor
     true
   end
 
+  desc "archive REF", "Archive a card"
+  def archive(ref)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    card = TrelloCli::Api::Card.archive(client, config, ref)
+
+    say "Archived: #{card['name']}", :green
+  rescue TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
   desc "new TITLE", "Create a new card"
   option :description, type: :string, aliases: "-d", desc: "Card description (markdown)"
   option :list, type: :string, aliases: "-l", desc: "List name (defaults to config default_list)"
@@ -101,6 +114,19 @@ class TrelloCli::Cli::Card < Thor
     TrelloCli::Api::Card.move(client, config, ref, list_name)
 
     say "Moved to: #{list_name}", :green
+  rescue TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
+  desc "unarchive REF", "Unarchive a card"
+  def unarchive(ref)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    card = TrelloCli::Api::Card.unarchive(client, config, ref)
+
+    say "Unarchived: #{card['name']}", :green
   rescue TrelloCli::Error => e
     say "Error: #{e.message}", :red
     exit 1

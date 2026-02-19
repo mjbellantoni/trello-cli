@@ -13,6 +13,7 @@ require_relative "cli/card"
 require_relative "cli/attach"
 require_relative "cli/comment"
 require_relative "cli/checklist"
+require_relative "cli/list"
 
 class TrelloCli::Cli < Thor
   desc "card SUBCOMMAND", "Manage Trello cards"
@@ -26,4 +27,7 @@ class TrelloCli::Cli < Thor
 
   desc "checklist SUBCOMMAND", "Manage card checklists"
   subcommand "checklist", TrelloCli::Cli::Checklist
+
+  desc "list SUBCOMMAND", "Manage board lists"
+  subcommand "list", TrelloCli::Cli::List
 end
