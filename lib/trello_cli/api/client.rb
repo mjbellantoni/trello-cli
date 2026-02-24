@@ -62,6 +62,37 @@ class TrelloCli::Api::Client
     execute(uri, request)
   end
 
+  def download_file(path)
+    uri = URI("#{BASE_URL}#{path}")
+    request = Net::HTTP::Get.new(uri)
+    request["Authorization"] = %(OAuth oauth_consumer_key="#{config.api_key}", oauth_token="#{config.token}")
+
+    response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+      http.request(request)
+    end
+
+    case response.code.to_i
+    when 200..299
+      response.body
+    when 301, 302, 303, 307, 308
+      redirect_uri = URI(response["Location"])
+      redirect_req = Net::HTTP::Get.new(redirect_uri)
+      redirect_req["Authorization"] = request["Authorization"]
+      redirect_response = Net::HTTP.start(redirect_uri.hostname, redirect_uri.port, use_ssl: true) do |http|
+        http.request(redirect_req)
+      end
+      raise TrelloCli::Error, "Download failed (#{redirect_response.code}): #{redirect_response.body}" unless (200..299).cover?(redirect_response.code.to_i)
+
+      redirect_response.body
+    when 401
+      raise TrelloCli::AuthError, "Authentication failed: #{response.body}"
+    when 404
+      raise TrelloCli::NotFoundError, "Resource not found: #{response.body}"
+    else
+      raise TrelloCli::Error, "Download failed (#{response.code}): #{response.body}"
+    end
+  end
+
   private
 
   attr_reader :config

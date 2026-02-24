@@ -5,14 +5,17 @@ class TrelloCli::Api::Attachment
     client.get("/cards/#{card_id}/attachments")
   end
 
-  def self.download_url(client, card_id, attachment_id)
-    attachment = client.get("/cards/#{card_id}/attachments/#{attachment_id}")
-    attachment["url"]
+  def self.download(client, card_id, attachment)
+    file_name = attachment["fileName"]
+    raise TrelloCli::Error, "Attachment '#{attachment['name']}' is a link, not an uploaded file" unless file_name
+
+    path = "/cards/#{card_id}/attachments/#{attachment['id']}/download/#{URI.encode_www_form_component(file_name)}"
+    client.download_file(path)
   end
 
   def self.find_by_name(client, card_id, filename)
     attachments = list(client, card_id)
-    attachment = attachments.find { |a| a["name"] == filename }
+    attachment = attachments.find { |a| a["fileName"] == filename || a["name"] == filename }
     raise TrelloCli::NotFoundError, "Attachment not found: #{filename}" unless attachment
 
     attachment
