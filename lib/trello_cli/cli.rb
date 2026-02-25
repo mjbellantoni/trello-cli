@@ -15,6 +15,8 @@ require_relative "cli/comment"
 require_relative "cli/checklist"
 require_relative "cli/list"
 
+require_relative "command_catalog"
+
 class TrelloCli::Cli < Thor
   desc "card SUBCOMMAND", "Manage Trello cards"
   subcommand "card", TrelloCli::Cli::Card
@@ -30,4 +32,21 @@ class TrelloCli::Cli < Thor
 
   desc "list SUBCOMMAND", "Manage board lists"
   subcommand "list", TrelloCli::Cli::List
+
+  desc "commands", "List available commands (use --json for machine-readable output)"
+  option :json, type: :boolean, desc: "Output as JSON"
+  def commands
+    catalog = TrelloCli::CommandCatalog.generate
+    if options[:json]
+      puts JSON.generate(catalog)
+    else
+      say "Available commands:", :bold
+      say ""
+      catalog["commands"].each do |cmd|
+        say "  #{cmd['name'].ljust(30)} #{cmd['summary']}"
+      end
+      say ""
+      say "Use --json for machine-readable output"
+    end
+  end
 end
