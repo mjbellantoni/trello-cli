@@ -14,6 +14,11 @@ class TrelloCli::Api::List
     list
   end
 
+  def self.cards(client, config, name)
+    list = find_by_name(client, config, name)
+    client.get("/lists/#{list['id']}/cards")
+  end
+
   def self.all(client, config)
     client.get("/boards/#{config.board_id}/lists")
   end
