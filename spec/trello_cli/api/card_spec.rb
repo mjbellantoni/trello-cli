@@ -67,6 +67,26 @@ RSpec.describe TrelloCli::Api::Card do
     end
   end
 
+  describe ".resolve_labels" do
+    before do
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/labels")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: [
+            { "id" => "label1", "name" => "\u{1F41B} Bug", "color" => "red" }
+          ].to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "matches label names with multibyte characters when input is ASCII-8BIT" do
+      ascii_name = "\u{1F41B} Bug".dup.force_encoding("ASCII-8BIT")
+      result = described_class.resolve_labels(client, config, [ascii_name])
+      expect(result).to eq(["label1"])
+    end
+  end
+
   describe ".remove_label" do
     before do
       # Stub card lookup by short number

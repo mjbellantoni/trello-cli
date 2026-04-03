@@ -12,7 +12,8 @@ class TrelloCli::Api::Card
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
     card = client.get("/cards/#{card_id}", { fields: "labels" })
-    label = (card["labels"] || []).find { |l| l["name"].downcase == label_name.downcase }
+    utf8_name = label_name.dup.force_encoding("UTF-8")
+    label = (card["labels"] || []).find { |l| l["name"].downcase == utf8_name.downcase }
     raise TrelloCli::NotFoundError, "Label not found on card: #{label_name}" unless label
 
     client.delete("/cards/#{card_id}/idLabels/#{label['id']}")
@@ -62,7 +63,8 @@ class TrelloCli::Api::Card
   def self.resolve_labels(client, config, label_names)
     board_labels = client.get("/boards/#{config.board_id}/labels")
     label_names.map do |name|
-      label = board_labels.find { |l| l["name"].downcase == name.downcase }
+      utf8_name = name.dup.force_encoding("UTF-8")
+      label = board_labels.find { |l| l["name"].downcase == utf8_name.downcase }
       raise TrelloCli::NotFoundError, "Label not found: #{name}" unless label
 
       label["id"]

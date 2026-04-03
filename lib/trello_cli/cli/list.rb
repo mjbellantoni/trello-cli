@@ -21,12 +21,12 @@ class TrelloCli::Cli::List < Thor
     cards = TrelloCli::Api::List.cards(client, config, name)
 
     if options[:with_label]
-      label = options[:with_label].downcase
+      label = options[:with_label].dup.force_encoding("UTF-8").downcase
       cards = cards.select { |c| (c["labels"] || []).any? { |l| l["name"].downcase == label } }
     end
 
     if options[:without_label]
-      label = options[:without_label].downcase
+      label = options[:without_label].dup.force_encoding("UTF-8").downcase
       cards = cards.reject { |c| (c["labels"] || []).any? { |l| l["name"].downcase == label } }
     end
 
