@@ -73,9 +73,40 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(cmd["args"].map { |a| a["name"] }).to eq(%w[REF TEXT])
     end
 
+    it "includes card add-label" do
+      cmd = catalog["commands"].find { |c| c["name"] == "card add-label" }
+      expect(cmd).not_to be_nil
+      expect(cmd["args"].map { |a| a["name"] }).to eq(%w[REF LABEL])
+    end
+
+    it "includes card remove-label" do
+      cmd = catalog["commands"].find { |c| c["name"] == "card remove-label" }
+      expect(cmd).not_to be_nil
+      expect(cmd["args"].map { |a| a["name"] }).to eq(%w[REF LABEL])
+    end
+
     it "includes list archive" do
       cmd = catalog["commands"].find { |c| c["name"] == "list archive" }
       expect(cmd).not_to be_nil
+    end
+
+    it "includes list cards with format option" do
+      cmd = catalog["commands"].find { |c| c["name"] == "list cards" }
+      expect(cmd).not_to be_nil
+      format_opt = cmd["options"].find { |o| o["name"] == "--format" }
+      expect(format_opt).not_to be_nil
+      expect(format_opt["type"]).to eq("string")
+      expect(format_opt["enum"]).to eq(%w[id id-name name])
+    end
+
+    it "includes list cards with label filter options" do
+      cmd = catalog["commands"].find { |c| c["name"] == "list cards" }
+      with_opt = cmd["options"].find { |o| o["name"] == "--with-label" }
+      without_opt = cmd["options"].find { |o| o["name"] == "--without-label" }
+      expect(with_opt).not_to be_nil
+      expect(with_opt["type"]).to eq("string")
+      expect(without_opt).not_to be_nil
+      expect(without_opt["type"]).to eq("string")
     end
   end
 

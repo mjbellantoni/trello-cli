@@ -58,7 +58,7 @@ module TrelloCli
 
       command.options.sort_by { |name, _| name }.map do |_name, opt|
         entry = {
-          "name" => "--#{opt.name}",
+          "name" => "--#{opt.name.tr('_', '-')}",
           "required" => opt.required == true,
           "summary" => opt.description || "",
           "type" => opt.type.to_s

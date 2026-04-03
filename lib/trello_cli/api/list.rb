@@ -16,7 +16,7 @@ class TrelloCli::Api::List
 
   def self.cards(client, config, name)
     list = find_by_name(client, config, name)
-    client.get("/lists/#{list['id']}/cards")
+    client.get("/lists/#{list['id']}/cards", { fields: "idShort,name,labels" })
   end
 
   def self.all(client, config)

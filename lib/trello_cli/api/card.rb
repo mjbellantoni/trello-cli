@@ -1,6 +1,23 @@
 # frozen_string_literal: true
 
 class TrelloCli::Api::Card
+  def self.add_label(client, config, card_ref, label_name)
+    ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
+    card_id = ref.to_api_id(client, config)
+    label_id = resolve_labels(client, config, [label_name]).first
+    client.post("/cards/#{card_id}/idLabels", { value: label_id })
+  end
+
+  def self.remove_label(client, config, card_ref, label_name)
+    ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
+    card_id = ref.to_api_id(client, config)
+    card = client.get("/cards/#{card_id}", { fields: "labels" })
+    label = (card["labels"] || []).find { |l| l["name"].downcase == label_name.downcase }
+    raise TrelloCli::NotFoundError, "Label not found on card: #{label_name}" unless label
+
+    client.delete("/cards/#{card_id}/idLabels/#{label['id']}")
+  end
+
   def self.archive(client, config, card_ref)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)

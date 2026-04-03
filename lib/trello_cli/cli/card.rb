@@ -150,4 +150,34 @@ class TrelloCli::Cli::Card < Thor
     say "Error: #{e.message}", :red
     exit 1
   end
+
+  desc "add-label REF LABEL", "Add a label to a card"
+  def add_label(ref, label_name)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    TrelloCli::Api::Card.add_label(client, config, ref, label_name)
+
+    say "Added label: #{label_name}", :green
+  rescue TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
+  map "add-label" => :add_label
+
+  desc "remove-label REF LABEL", "Remove a label from a card"
+  def remove_label(ref, label_name)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    TrelloCli::Api::Card.remove_label(client, config, ref, label_name)
+
+    say "Removed label: #{label_name}", :green
+  rescue TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
+  map "remove-label" => :remove_label
 end
