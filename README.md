@@ -1,6 +1,6 @@
 # Trello CLI
 
-A command-line interface for managing Trello cards, checklists, comments, and attachments.
+A command-line interface for managing Trello cards, labels, checklists, comments, and attachments.
 
 ## Installation
 
@@ -46,6 +46,25 @@ trello card new "Task title" -d "Description" -l "List Name" -L label1 label2
 trello card show #123
 trello card move #123 "Done"
 trello card update #123 -d "New description"
+```
+
+### Labels
+
+```bash
+trello card add-label #123 "Bug"
+trello card remove-label #123 "Bug"
+```
+
+### Lists
+
+```bash
+trello list cards "Doing"
+trello list cards "Doing" --format id
+trello list cards "Doing" --format name
+trello list cards "Doing" --format id-name
+trello list cards "Doing" --with-label "Bug"
+trello list cards "Doing" --without-label "Bug"
+trello list cards "Doing" --with-label "Bug" --format id
 ```
 
 ### Attachments
