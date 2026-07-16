@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "time"
+
 class TrelloCli::Cli::Card < Thor
   def self.exit_on_failure?
     true
