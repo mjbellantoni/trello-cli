@@ -47,11 +47,20 @@ class TrelloCli::Api::Card
     client.post("/cards", body)
   end
 
-  def self.move(client, config, card_ref, list_name)
+  def self.move(client, config, card_ref, list_name, position: nil)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
     list_data = TrelloCli::Api::List.find_by_name(client, config, list_name)
-    client.put("/cards/#{card_id}", { idList: list_data["id"] })
+    body = { idList: list_data["id"] }
+    body[:pos] = parse_position(position) unless position.nil?
+    client.put("/cards/#{card_id}", body)
+  end
+
+  def self.parse_position(position)
+    return position if %w[top bottom].include?(position)
+    return Float(position) if position.match?(/\A-?\d+(\.\d+)?\z/)
+
+    raise TrelloCli::Error, "Invalid position: #{position} (expected top, bottom, or a number)"
   end
 
   def self.update(client, config, card_ref, description:)
