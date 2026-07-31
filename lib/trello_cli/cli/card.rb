@@ -109,11 +109,12 @@ class TrelloCli::Cli::Card < Thor
   end
 
   desc "move REF LIST", "Move a card to a different list"
+  option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
   def move(ref, list_name)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
 
-    TrelloCli::Api::Card.move(client, config, ref, list_name)
+    TrelloCli::Api::Card.move(client, config, ref, list_name, position: options[:position])
 
     say "Moved to: #{list_name}", :green
   rescue TrelloCli::Error => e

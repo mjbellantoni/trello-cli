@@ -145,4 +145,73 @@ RSpec.describe TrelloCli::Api::Card do
       }.to raise_error(TrelloCli::NotFoundError, /Label not found on card/)
     end
   end
+
+  describe ".move" do
+    before do
+      # Stub card lookup by short number
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/cards/42")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: { "id" => "card123", "idShort" => 42 }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub board lists lookup (used by List.find_by_name)
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/lists")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: [{ "id" => "list1", "name" => "Done" }].to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub the card update
+      stub_request(:put, "https://api.trello.com/1/cards/card123")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: { "id" => "card123" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "moves a card to a list without changing position" do
+      described_class.move(client, config, "#42", "Done")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { idList: "list1" })
+      ).to have_been_made.once
+    end
+
+    it "places the card at the top when position is top" do
+      described_class.move(client, config, "#42", "Done", position: "top")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { idList: "list1", pos: "top" })
+      ).to have_been_made.once
+    end
+
+    it "places the card at the bottom when position is bottom" do
+      described_class.move(client, config, "#42", "Done", position: "bottom")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { idList: "list1", pos: "bottom" })
+      ).to have_been_made.once
+    end
+
+    it "sends a numeric position as a number" do
+      described_class.move(client, config, "#42", "Done", position: "2")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { idList: "list1", pos: 2.0 })
+      ).to have_been_made.once
+    end
+
+    it "raises Error for an invalid position" do
+      expect {
+        described_class.move(client, config, "#42", "Done", position: "abc")
+      }.to raise_error(TrelloCli::Error, /position/i)
+    end
+  end
 end

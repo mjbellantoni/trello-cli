@@ -45,6 +45,7 @@ TRELLO_TOKEN: "your_token"
 trello card new "Task title" -d "Description" -l "List Name" -L label1 label2
 trello card show #123
 trello card move #123 "Done"
+trello card move #123 "Done" -p top   # place at top (top, bottom, or a number)
 trello card update #123 -d "New description"
 ```
 
