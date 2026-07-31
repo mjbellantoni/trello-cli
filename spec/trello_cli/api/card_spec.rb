@@ -214,4 +214,50 @@ RSpec.describe TrelloCli::Api::Card do
       }.to raise_error(TrelloCli::Error, /position/i)
     end
   end
+
+  describe ".update" do
+    before do
+      # Stub card lookup by short number
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/cards/42")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: { "id" => "card123", "idShort" => 42 }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub the card update
+      stub_request(:put, "https://api.trello.com/1/cards/card123")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: { "id" => "card123" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "updates the description" do
+      described_class.update(client, config, "#42", description: "New desc")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { desc: "New desc" })
+      ).to have_been_made.once
+    end
+
+    it "updates the title" do
+      described_class.update(client, config, "#42", name: "New title")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { name: "New title" })
+      ).to have_been_made.once
+    end
+
+    it "updates both description and title in one request" do
+      described_class.update(client, config, "#42", description: "New desc", name: "New title")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { desc: "New desc", name: "New title" })
+      ).to have_been_made.once
+    end
+  end
 end
