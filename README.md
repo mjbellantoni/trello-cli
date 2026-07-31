@@ -47,6 +47,7 @@ trello card show #123
 trello card move #123 "Done"
 trello card move #123 "Done" -p top   # place at top (top, bottom, or a number)
 trello card update #123 -d "New description"
+trello card update #123 -t "New title"
 ```
 
 ### Labels

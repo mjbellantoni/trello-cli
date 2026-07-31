@@ -63,10 +63,13 @@ class TrelloCli::Api::Card
     raise TrelloCli::Error, "Invalid position: #{position} (expected top, bottom, or a number)"
   end
 
-  def self.update(client, config, card_ref, description:)
+  def self.update(client, config, card_ref, description: nil, name: nil)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
-    client.put("/cards/#{card_id}", { desc: description })
+    body = {}
+    body[:desc] = description unless description.nil?
+    body[:name] = name unless name.nil?
+    client.put("/cards/#{card_id}", body)
   end
 
   def self.resolve_labels(client, config, label_names)

@@ -137,18 +137,22 @@ class TrelloCli::Cli::Card < Thor
 
   desc "update REF", "Update card fields"
   option :description, type: :string, aliases: "-d", desc: "New description (markdown)"
+  option :title, type: :string, aliases: "-t", desc: "New title"
   def update(ref)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
 
-    if options[:description].nil?
-      say "Error: No update options provided. Use --description to update.", :red
+    if options[:description].nil? && options[:title].nil?
+      say "Error: No update options provided. Use --description or --title to update.", :red
       exit 1
     end
 
-    TrelloCli::Api::Card.update(client, config, ref, description: options[:description])
+    TrelloCli::Api::Card.update(client, config, ref, description: options[:description], name: options[:title])
 
-    say "Updated card description", :green
+    updated = []
+    updated << "description" unless options[:description].nil?
+    updated << "title" unless options[:title].nil?
+    say "Updated card #{updated.join(' and ')}", :green
   rescue TrelloCli::Error => e
     say "Error: #{e.message}", :red
     exit 1
