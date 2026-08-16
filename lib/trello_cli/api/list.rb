@@ -19,8 +19,11 @@ class TrelloCli::Api::List
     client.get("/lists/#{list['id']}/cards", { fields: "idShort,name,labels" })
   end
 
-  def self.all(client, config)
-    client.get("/boards/#{config.board_id}/lists")
+  # with_counts embeds each list's open cards in this same response. Counting
+  # them per list would turn one request into one per list.
+  def self.all(client, config, with_counts: false)
+    params = with_counts ? { cards: "open", card_fields: "id" } : {}
+    client.get("/boards/#{config.board_id}/lists", params)
   end
 
   def self.unarchive(client, config, name)
