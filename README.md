@@ -50,12 +50,54 @@ trello card update #123 -d "New description"
 trello card update #123 -t "New title"
 ```
 
+### Filing cards by kind
+
+Each command applies its label, assembles the standard headings, and puts the
+card at the top of your default list. Required fields are required: the command
+exits non-zero and creates nothing if one is missing or if the description is
+over the word cap.
+
+```bash
+trello bug new "Export times out on large ranges" \
+  --steps "Open Reports" "Pick a 90-day range" "Click Export" \
+  --expected "A CSV downloads" \
+  --actual "The spinner hangs and returns a 504"
+
+trello feature new "Let reviewers filter the queue by assignee" \
+  --what "A filter control on the review queue" \
+  --why "Reviewers cannot find their own work on a shared board" \
+  --done-when "Given a shared queue" "When I filter by my name" "Then only my cards remain"
+
+trello chore new "Drop the unused legacy_sessions table" \
+  --what "Remove the table and its model" \
+  --why-now "It blocks the session-store migration next sprint" \
+  --done-when "The table is gone and no code references it"
+```
+
+Word caps are 200 words for a bug and 150 for a feature or chore, counted across
+the whole assembled description including headings. Over the cap, the card is
+either more than one card — split it — or the detail belongs in an attachment.
+
+There is no `--force`. To change a limit, set it in `.trello.yml`:
+
+```yaml
+TRELLO_BUG_WORD_CAP: 120
+TRELLO_FEATURE_WORD_CAP: 90
+TRELLO_CHORE_WORD_CAP: 90
+TRELLO_BUG_LABEL: "bug"
+```
+
 ### Labels
 
 ```bash
-trello card add-label #123 "Bug"
-trello card remove-label #123 "Bug"
+trello label list
+trello label new "bug" --color red
+trello label rename "bug" "defect"
+trello label delete "defect"
 ```
+
+Deleting a label that is still on cards is refused. Set
+`TRELLO_ALLOW_LABEL_DELETE_IN_USE=true` to permit it.
 
 ### Lists
 
