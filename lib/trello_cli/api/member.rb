@@ -8,17 +8,28 @@ class TrelloCli::Api::Member
   # Callers name a person however they know them. Username is tried first
   # because Trello guarantees it is unique — a full name or a set of initials
   # can collide, and either can equal somebody else's username.
+  #
+  # Exact matches are exhausted before any prefix match, so a person whose
+  # whole name is another person's prefix is never shadowed by them.
   def self.find_by_name(client, config, name)
     members = all(client, config)
     wanted = normalize(name)
 
-    member = members.find { |m| normalize(m["username"]) == wanted } ||
-             members.find { |m| normalize(m["fullName"]) == wanted } ||
-             members.find { |m| normalize(m["initials"]) == wanted }
+    exact = members.find { |m| normalize(m["username"]) == wanted } ||
+            members.find { |m| normalize(m["fullName"]) == wanted } ||
+            members.find { |m| normalize(m["initials"]) == wanted }
+    return exact if exact
 
-    raise TrelloCli::NotFoundError, not_found_message(name, members) unless member
+    # Real usernames carry noise nobody types from memory — collinstewart12,
+    # matthew_rl — so the obvious guess has to land.
+    prefixed = members.select do |m|
+      normalize(m["username"]).start_with?(wanted) || normalize(m["fullName"]).start_with?(wanted)
+    end
 
-    member
+    return prefixed.first if prefixed.one?
+    raise TrelloCli::Error, ambiguous_message(name, prefixed) if prefixed.size > 1
+
+    raise TrelloCli::NotFoundError, not_found_message(name, members)
   end
 
   # What to call someone in a listing. Trello allows a blank full name, and a
@@ -46,10 +57,19 @@ class TrelloCli::Api::Member
   def self.not_found_message(name, members)
     return "Member not found: #{name}\nBoard members: (none)" if members.empty?
 
-    width = members.map { |m| m["username"].to_s.length }.max
-    roster = members.map { |m| "  #{m['username'].to_s.ljust(width)} #{m['fullName']}".rstrip }
-    "Member not found: #{name}\nBoard members:\n#{roster.join("\n")}"
+    "Member not found: #{name}\nBoard members:\n#{roster_lines(members).join("\n")}"
   end
 
-  private_class_method :normalize, :not_found_message
+  # Naming two people equally well is not a match. Say who was meant and let
+  # the caller pick rather than assigning the card to a coin flip.
+  def self.ambiguous_message(name, members)
+    "Member is ambiguous: #{name}\nMatches:\n#{roster_lines(members).join("\n")}"
+  end
+
+  def self.roster_lines(members)
+    width = members.map { |m| m["username"].to_s.length }.max
+    members.map { |m| "  #{m['username'].to_s.ljust(width)} #{m['fullName']}".rstrip }
+  end
+
+  private_class_method :normalize, :not_found_message, :ambiguous_message, :roster_lines
 end
