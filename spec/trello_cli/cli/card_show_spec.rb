@@ -9,7 +9,9 @@ require "trello_cli/cli"
 # silently.
 RSpec.describe "card show" do
   let(:auth) { { key: "test_key", token: "test_token" } }
-  let(:find_query) { auth.merge(checklists: "all", attachments: "true", actions: "commentCard") }
+  let(:find_query) do
+    auth.merge(checklists: "all", attachments: "true", actions: "commentCard", list: "true", members: "true")
+  end
 
   around do |example|
     saved = ENV.to_h.slice("TRELLO_API_KEY", "TRELLO_TOKEN", "TRELLO_DEFAULT_BOARD_ID")
@@ -52,6 +54,8 @@ RSpec.describe "card show" do
       stub_card(
         "name" => "Export times out on large ranges",
         "shortUrl" => "https://trello.com/c/abc123XY",
+        "list" => { "id" => "list9", "name" => "Needs a Decision" },
+        "members" => [{ "username" => "collinreed", "fullName" => "Collin Reed" }],
         "labels" => [{ "name" => "bug" }, { "name" => "urgent" }],
         "desc" => "The spinner hangs and returns a 504.",
         "checklists" => [{
@@ -75,6 +79,8 @@ RSpec.describe "card show" do
       expect(show).to eq(<<~OUTPUT)
         Export times out on large ranges
         URL: https://trello.com/c/abc123XY
+        List: Needs a Decision
+        Members: Collin Reed
 
         Labels: bug, urgent
 
@@ -114,11 +120,13 @@ RSpec.describe "card show" do
     end
   end
 
-  describe "a card with nothing but a title" do
+  describe "a card with nothing but a title and a list" do
     before do
       stub_card(
         "name" => "Bare card",
         "shortUrl" => "https://trello.com/c/bare1234",
+        "list" => { "id" => "list1", "name" => "Inbox" },
+        "members" => [],
         "labels" => [],
         "desc" => "",
         "checklists" => [],
@@ -127,8 +135,43 @@ RSpec.describe "card show" do
       )
     end
 
-    it "prints only the title and URL" do
-      expect(show).to eq("Bare card\nURL: https://trello.com/c/bare1234\n\n")
+    it "prints the title, URL and list, omitting the empty members line" do
+      expect(show).to eq("Bare card\nURL: https://trello.com/c/bare1234\nList: Inbox\n\n")
+    end
+  end
+
+  describe "members" do
+    it "joins several members with commas" do
+      stub_card(
+        "name" => "Shared", "shortUrl" => "https://trello.com/c/shared12",
+        "list" => { "name" => "In Progress" },
+        "members" => [{ "username" => "mjb", "fullName" => "Matthew Bellantoni" },
+                      { "username" => "collinreed", "fullName" => "Collin Reed" }]
+      )
+
+      expect(show).to include("Members: Matthew Bellantoni, Collin Reed\n")
+    end
+
+    it "falls back to the username when a member has no full name" do
+      stub_card(
+        "name" => "Shared", "shortUrl" => "https://trello.com/c/shared12",
+        "list" => { "name" => "In Progress" },
+        "members" => [{ "username" => "ghost", "fullName" => "" }]
+      )
+
+      expect(show).to include("Members: ghost\n")
+    end
+  end
+
+  # The API omits `list` for a card that has been archived out of every list,
+  # and show must not blow up rendering one.
+  describe "a card with no list in the payload" do
+    before do
+      stub_card("name" => "Orphan", "shortUrl" => "https://trello.com/c/orphan12")
+    end
+
+    it "omits the list line rather than raising" do
+      expect(show).to eq("Orphan\nURL: https://trello.com/c/orphan12\n\n")
     end
   end
 

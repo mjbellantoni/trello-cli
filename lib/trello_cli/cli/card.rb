@@ -20,6 +20,32 @@ class TrelloCli::Cli::Card < Thor
     exit 1
   end
 
+  desc "assign REF MEMBER", "Assign a board member to a card"
+  def assign(ref, member_name)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    member = TrelloCli::Api::Card.assign(client, config, ref, member_name)
+
+    say "Assigned: #{TrelloCli::Api::Member.describe(member)}", :green
+  rescue ArgumentError, TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
+  desc "unassign REF MEMBER", "Remove a board member from a card"
+  def unassign(ref, member_name)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    member = TrelloCli::Api::Card.unassign(client, config, ref, member_name)
+
+    say "Unassigned: #{TrelloCli::Api::Member.describe(member)}", :green
+  rescue ArgumentError, TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
   desc "new TITLE", "Create a new card"
   option :description, type: :string, aliases: "-d", desc: "Card description (markdown)"
   option :list, type: :string, aliases: "-l", desc: "List name (defaults to config default_list)"
@@ -55,6 +81,12 @@ class TrelloCli::Cli::Card < Thor
 
     say card["name"], :bold
     say "URL: #{card['shortUrl']}"
+    say "List: #{card['list']['name']}" if card["list"]
+
+    if card["members"]&.any?
+      say "Members: #{card['members'].map { |m| TrelloCli::Api::Member.display_name(m) }.join(', ')}"
+    end
+
     say ""
 
     if card["labels"]&.any?
