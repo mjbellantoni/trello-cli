@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
 class TrelloCli::Cli::Label < Thor
-  COLORS = %w[green yellow orange red purple blue sky lime pink black].freeze
+  # Trello offers a _light and _dark variant of every base colour, and boards
+  # do use them — this one carries orange_light, red_dark and yellow_dark.
+  # Listing only the base ten made those labels impossible to create here.
+  BASE_COLORS = %w[green yellow orange red purple blue sky lime pink black].freeze
+  COLORS = BASE_COLORS.flat_map { |c| [c, "#{c}_light", "#{c}_dark"] }.freeze
 
   def self.exit_on_failure?
     true

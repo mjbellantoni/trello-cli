@@ -127,6 +127,14 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(color["enum"]).to include("red", "blue", "sky")
     end
 
+    it "offers the light and dark colour variants Trello actually uses" do
+      cmd = catalog["commands"].find { |c| c["name"] == "label new" }
+      color = cmd["options"].find { |o| o["name"] == "--color" }
+      # Real boards carry these; an enum of only the base ten made the labels
+      # that use them impossible to create.
+      expect(color["enum"]).to include("yellow_dark", "orange_light", "red_dark")
+    end
+
     it "includes the other label commands" do
       names = catalog["commands"].map { |c| c["name"] }
       expect(names).to include("label list", "label rename", "label delete")
