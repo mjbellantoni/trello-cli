@@ -51,6 +51,14 @@ RSpec.describe TrelloCli::Api::Label do
         described_class.create(client, config, name: "Bug", color: "blue")
       }.to raise_error(TrelloCli::Error, /already exists/i)
     end
+
+    it "allows a colour-only label even though an unnamed label exists" do
+      stub_request(:post, "https://api.trello.com/1/labels")
+        .with(query: auth).to_return(status: 200, body: { "id" => "l9" }.to_json,
+                                     headers: { "Content-Type" => "application/json" })
+
+      expect { described_class.create(client, config, name: "", color: "pink") }.not_to raise_error
+    end
   end
 
   describe ".rename" do
@@ -105,6 +113,17 @@ RSpec.describe TrelloCli::Api::Label do
       expect(a_request(:delete, "https://api.trello.com/1/labels/l1").with(query: auth)).to have_been_made.once
     ensure
       ENV.delete("TRELLO_ALLOW_LABEL_DELETE_IN_USE")
+    end
+
+    it "counts archived cards as usage when deciding whether to refuse" do
+      stub_board_cards([{ "id" => "c1", "labels" => [{ "id" => "l1" }] }])
+
+      expect { described_class.delete(client, config, "bug") }.to raise_error(TrelloCli::Error)
+
+      expect(
+        a_request(:get, "https://api.trello.com/1/boards/test_board/cards")
+          .with(query: hash_including("filter" => "all"))
+      ).to have_been_made
     end
   end
 end

@@ -14,7 +14,12 @@ class TrelloCli::Api::Label
   end
 
   def self.exists?(client, config, name)
-    utf8 = name.dup.force_encoding("UTF-8").downcase
+    utf8 = name.to_s.dup.force_encoding("UTF-8").downcase
+    # Trello boards ship with colour-only labels whose name is "". Uniqueness
+    # exists to keep labels addressable by name, and a blank name never was,
+    # so refusing a second one would block a legitimate operation for nothing.
+    return false if utf8.strip.empty?
+
     all(client, config).any? { |l| l["name"].to_s.downcase == utf8 }
   end
 
@@ -36,7 +41,10 @@ class TrelloCli::Api::Label
   end
 
   def self.cards_using(client, config, label_id)
-    cards = client.get("/boards/#{config.board_id}/cards", { fields: "labels" })
+    # filter: "all" is load-bearing. The endpoint returns only OPEN cards by
+    # default, so a label living solely on archived cards would count as zero
+    # and be deleted silently — stripping it from cards that can be unarchived.
+    cards = client.get("/boards/#{config.board_id}/cards", { fields: "labels", filter: "all" })
     cards.count { |card| (card["labels"] || []).any? { |l| l["id"] == label_id } }
   end
 
