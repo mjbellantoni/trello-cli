@@ -64,6 +64,11 @@ RSpec.describe TrelloCli::KindDescription do
                                            done_when: ["Table gone"], notes: "PR 12")
       expect(text.scan(/^## (.+)$/).flatten).to eq(["What", "Why now", "Done when", "Notes"])
     end
+
+    it "renders an array in a text field as lines, not as an inspected array" do
+      text = described_class.build(:bug, steps: ["Open"], expected: %w[First Second], actual: "Hangs.")
+      expect(text).to include("## Expected Behavior\nFirst\nSecond")
+    end
   end
 
   describe "the counting invariant" do
