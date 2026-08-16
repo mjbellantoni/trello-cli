@@ -1,1 +1,4 @@
 Gemfile.lock
+
+# Holds a live API key and token
+.trello.yml
