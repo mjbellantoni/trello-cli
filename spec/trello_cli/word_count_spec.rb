@@ -43,6 +43,18 @@ RSpec.describe TrelloCli::WordCount do
     expect(described_class.count("see https://trello.com/c/abc123 now")).to eq(3)
   end
 
+  it "does not split an identifier containing underscores" do
+    expect(described_class.count("Set TRELLO_BUG_WORD_CAP to override")).to eq(4)
+  end
+
+  it "counts a snake_case identifier as one word" do
+    expect(described_class.count("a_b_c")).to eq(1)
+  end
+
+  it "strips paired emphasis without splitting an inner underscore" do
+    expect(described_class.count("_italic_ and in_progress")).to eq(3)
+  end
+
   it "counts an assembled bug description" do
     description = <<~MD
       ## Steps to Recreate

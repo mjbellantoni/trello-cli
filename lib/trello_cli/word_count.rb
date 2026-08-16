@@ -8,16 +8,18 @@ module TrelloCli
     FENCE = /^\s*```.*$/.freeze
     LIST_MARKER = /^\s*(?:[-*+]|\d+\.)\s+/.freeze
     HEADING_MARKER = /^\s*#+\s*/.freeze
-    EMPHASIS = /[*_]{1,3}/.freeze
+    EDGE_EMPHASIS = /\A[*_]+|[*_]+\z/.freeze
 
     def self.count(text)
       return 0 if text.nil?
 
-      stripped = text.lines.reject { |line| line.match?(FENCE) }.map do |line|
-        line.sub(HEADING_MARKER, "").sub(LIST_MARKER, "")
-      end.join(" ")
-
-      stripped.gsub(EMPHASIS, " ").split(/\s+/).count { |token| !token.empty? }
+      text.lines
+          .reject { |line| line.match?(FENCE) }
+          .map { |line| line.sub(HEADING_MARKER, "").sub(LIST_MARKER, "") }
+          .join(" ")
+          .split(/\s+/)
+          .map { |token| token.gsub(EDGE_EMPHASIS, "") }
+          .count { |token| !token.empty? }
     end
   end
 end
