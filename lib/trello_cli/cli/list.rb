@@ -5,6 +5,29 @@ class TrelloCli::Cli::List < Thor
     true
   end
 
+  desc "all", "List all lists on the board"
+  option :format, type: :string, aliases: "-f", enum: %w[id id-name name], desc: "Output format (id, name, id-name)"
+  option :count, type: :boolean, aliases: "-c", desc: "Append the number of open cards in each list"
+  def all
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    lists = TrelloCli::Api::List.all(client, config, with_counts: options[:count] == true)
+
+    lists.each do |list|
+      line = case options[:format]
+             when "id" then list["id"]
+             when "id-name" then "#{list['id']} #{list['name']}"
+             else list["name"]
+             end
+      line = "#{line} (#{(list['cards'] || []).size})" if options[:count]
+      say line
+    end
+  rescue TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
   desc "cards NAME", "List cards in a list"
   option :format, type: :string, aliases: "-f", enum: %w[id id-name name], desc: "Output format (id, name, id-name)"
   option :with_label, type: :string, aliases: "-L", desc: "Only show cards with this label"
