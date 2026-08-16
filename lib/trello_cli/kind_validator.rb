@@ -30,14 +30,15 @@ module TrelloCli
                  word_count: count, breakdown: breakdown)
     end
 
-    def self.blank?(field, value)
-      return TrelloCli::KindDescription.split_lines(value).empty? if %i[numbered lines].include?(field[:format])
-
-      value.nil? || value.to_s.strip.empty?
+    def self.blank?(value)
+      # Blankness is judged the same way for every format. Special-casing by
+      # declared format let an Array through a text field: [].to_s is "[]", which
+      # is not empty, so a required field supplied as [] passed validation.
+      TrelloCli::KindDescription.split_lines(value).empty?
     end
 
     def self.missing_error(kind, definition, values)
-      missing = definition[:fields].select { |f| f[:required] && blank?(f, values[f[:flag]]) }
+      missing = definition[:fields].select { |f| f[:required] && blank?(values[f[:flag]]) }
       return nil if missing.empty?
 
       required = definition[:fields].select { |f| f[:required] }.map { |f| flag_of(f) }
@@ -58,7 +59,10 @@ module TrelloCli
       return nil unless definition[:gherkin]
 
       text = TrelloCli::KindDescription.split_lines(values[:done_when]).join(" ").downcase
-      return nil if GHERKIN.all? { |word| text.include?(word) }
+      # Word boundaries, not substrings: "strengthen" contains "then",
+      # "whenever" contains "when", and "forgiven" contains "given", so
+      # include? accepted prose with no Gherkin structure whatsoever.
+      return nil if GHERKIN.all? { |word| text.match?(/\b#{word}\b/) }
 
       "Error: --done-when must contain Given, When, and Then.\n" \
         "No card created."

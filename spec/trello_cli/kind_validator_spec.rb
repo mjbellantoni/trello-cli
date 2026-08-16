@@ -52,6 +52,14 @@ RSpec.describe TrelloCli::KindValidator do
       result = call_bug(values: valid_bug(actual: nil, expected: nil))
       expect(result.errors.first).to include("--expected").and include("--actual")
     end
+
+    it "rejects a required text field supplied as an empty array" do
+      expect(call_bug(values: valid_bug(expected: []))).not_to be_ok
+    end
+
+    it "rejects a required text field supplied as an array of blanks" do
+      expect(call_bug(values: valid_bug(expected: ["", ""]))).not_to be_ok
+    end
   end
 
   describe "title prefix" do
@@ -93,6 +101,15 @@ RSpec.describe TrelloCli::KindValidator do
                                     values: { what: "Drop it", why_now: "Blocks work",
                                               done_when: ["Table is gone"] }, cap: 150)
       expect(result).to be_ok
+    end
+
+    it "rejects prose containing the keywords only inside other words" do
+      expect(call_feature(["We should strengthen this.", "It happens whenever needed.",
+                           "It was forgiven previously."])).not_to be_ok
+    end
+
+    it "accepts gherkin written on a single line" do
+      expect(call_feature(["Given a queue, when I filter, then it narrows"])).to be_ok
     end
   end
 

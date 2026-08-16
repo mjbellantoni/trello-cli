@@ -34,7 +34,9 @@ module TrelloCli
       when :lines
         split_lines(value).join("\n")
       else
-        value.to_s.strip
+        # An Array reaching a text field must not be rendered with Array#to_s,
+        # which would put a literal ["a", "b"] into the card description.
+        value.is_a?(Array) ? split_lines(value).join("\n") : value.to_s.strip
       end
     end
     private_class_method :render
