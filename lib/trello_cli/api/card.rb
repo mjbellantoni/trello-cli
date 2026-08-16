@@ -19,6 +19,33 @@ class TrelloCli::Api::Card
     client.delete("/cards/#{card_id}/idLabels/#{label['id']}")
   end
 
+  # Idempotent: Trello rejects a POST for a member already on the card, and an
+  # agent retrying an assign should not see that as a failure.
+  def self.assign(client, config, card_ref, member_name)
+    ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
+    card_id = ref.to_api_id(client, config)
+    member = TrelloCli::Api::Member.find_by_name(client, config, member_name)
+
+    card = client.get("/cards/#{card_id}", { fields: "idMembers" })
+    unless (card["idMembers"] || []).include?(member["id"])
+      client.post("/cards/#{card_id}/idMembers", { value: member["id"] })
+    end
+
+    member
+  end
+
+  # No pre-check here: DELETE is already idempotent, so removing a member who
+  # is not on the card is a no-op rather than an error.
+  def self.unassign(client, config, card_ref, member_name)
+    ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
+    card_id = ref.to_api_id(client, config)
+    member = TrelloCli::Api::Member.find_by_name(client, config, member_name)
+
+    client.delete("/cards/#{card_id}/idMembers/#{member['id']}")
+
+    member
+  end
+
   def self.archive(client, config, card_ref)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
@@ -28,7 +55,10 @@ class TrelloCli::Api::Card
   def self.find(client, config, card_ref)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
-    client.get("/cards/#{card_id}", { checklists: "all", attachments: "true", actions: "commentCard" })
+    # list and members ride along on this request rather than costing their own.
+    client.get("/cards/#{card_id}",
+               { checklists: "all", attachments: "true", actions: "commentCard",
+                 list: "true", members: "true" })
   end
 
   def self.create(client, config, title:, description: nil, list: nil, labels: [], position: nil)
