@@ -117,6 +117,25 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(without_opt).not_to be_nil
       expect(without_opt["type"]).to eq("string")
     end
+
+    it "includes label new with a required color enum" do
+      cmd = catalog["commands"].find { |c| c["name"] == "label new" }
+      expect(cmd).not_to be_nil
+      expect(cmd["args"].map { |a| a["name"] }).to eq(["NAME"])
+      color = cmd["options"].find { |o| o["name"] == "--color" }
+      expect(color["required"]).to be(true)
+      expect(color["enum"]).to include("red", "blue", "sky")
+    end
+
+    it "includes the other label commands" do
+      names = catalog["commands"].map { |c| c["name"] }
+      expect(names).to include("label list", "label rename", "label delete")
+    end
+
+    it "offers no force flag on label delete" do
+      cmd = catalog["commands"].find { |c| c["name"] == "label delete" }
+      expect(cmd["options"].map { |o| o["name"] }).not_to include("--force")
+    end
   end
 
   describe "command shape" do
