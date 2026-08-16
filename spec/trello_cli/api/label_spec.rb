@@ -69,6 +69,34 @@ RSpec.describe TrelloCli::Api::Label do
         described_class.rename(client, config, "bug", "chore")
       }.to raise_error(TrelloCli::Error, /already exists/i)
     end
+
+    it "allows a case-only rename of a label to itself" do
+      stub_request(:put, "https://api.trello.com/1/labels/l1")
+        .with(query: auth).to_return(status: 200, body: "{}",
+                                     headers: { "Content-Type" => "application/json" })
+
+      expect { described_class.rename(client, config, "bug", "Bug") }.not_to raise_error
+
+      expect(
+        a_request(:put, "https://api.trello.com/1/labels/l1").with(query: auth, body: { name: "Bug" })
+      ).to have_been_made.once
+    end
+
+    it "refuses to rename a label to a blank name" do
+      expect {
+        described_class.rename(client, config, "bug", "")
+      }.to raise_error(TrelloCli::Error, /cannot be blank/i)
+    end
+
+    it "makes no request when the new name is blank" do
+      begin
+        described_class.rename(client, config, "bug", "   ")
+      rescue TrelloCli::Error
+        nil
+      end
+
+      expect(a_request(:put, %r{https://api\.trello\.com/1/labels/.*})).not_to have_been_made
+    end
   end
 
   describe ".delete" do

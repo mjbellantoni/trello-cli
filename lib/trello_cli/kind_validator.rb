@@ -10,7 +10,7 @@ module TrelloCli
       end
     end
 
-    KIND_PREFIX = /\A\s*(?:bug|feature|chore)\s*:/i.freeze
+    KIND_PREFIX = /\A\s*(?:#{Regexp.union(TrelloCli::Kinds.names.map(&:to_s)).source})\s*:/i.freeze
     GHERKIN = %w[given when then].freeze
 
     def self.call(kind:, title:, values:, cap:)

@@ -44,9 +44,12 @@ class TrelloCli::Api::Config
 
   def word_cap_for(kind)
     override = ENV["TRELLO_#{kind.to_s.upcase}_WORD_CAP"]
-    return DEFAULT_WORD_CAPS.fetch(kind) if override.nil? || override.empty?
+    return DEFAULT_WORD_CAPS.fetch(kind) if override.nil? || override.strip.empty?
 
-    Integer(override)
+    Integer(override, 10)
+  rescue ArgumentError
+    raise TrelloCli::ConfigError,
+          "TRELLO_#{kind.to_s.upcase}_WORD_CAP must be a whole number, got #{override.inspect}"
   end
 
   def label_for(kind)
