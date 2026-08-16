@@ -9,6 +9,8 @@ module TrelloCli
   class AuthError < Error; end
 end
 
+require_relative "trello_cli/word_count"
+
 require_relative "trello_cli/api"
 require_relative "trello_cli/api/config"
 require_relative "trello_cli/api/client"
