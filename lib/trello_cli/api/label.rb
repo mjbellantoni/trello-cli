@@ -5,37 +5,59 @@ class TrelloCli::Api::Label
     client.get("/boards/#{config.board_id}/labels")
   end
 
+  def self.normalize(name)
+    name.to_s.dup.force_encoding("UTF-8").downcase
+  end
+
+  def self.find_in(labels, name)
+    normalized = normalize(name)
+    labels.find { |l| l["name"].to_s.downcase == normalized }
+  end
+
+  def self.duplicate_error(name)
+    TrelloCli::Error.new("Label already exists: #{name}. Names must be unique to stay addressable.")
+  end
+
   def self.find_by_name(client, config, name)
-    utf8 = name.dup.force_encoding("UTF-8").downcase
-    label = all(client, config).find { |l| l["name"].to_s.downcase == utf8 }
+    label = find_in(all(client, config), name)
     raise TrelloCli::NotFoundError, "Label not found: #{name}" unless label
 
     label
   end
 
   def self.exists?(client, config, name)
-    utf8 = name.to_s.dup.force_encoding("UTF-8").downcase
     # Trello boards ship with colour-only labels whose name is "". Uniqueness
     # exists to keep labels addressable by name, and a blank name never was,
     # so refusing a second one would block a legitimate operation for nothing.
-    return false if utf8.strip.empty?
+    return false if normalize(name).strip.empty?
 
-    all(client, config).any? { |l| l["name"].to_s.downcase == utf8 }
+    !find_in(all(client, config), name).nil?
   end
 
   def self.create(client, config, name:, color:)
-    if exists?(client, config, name)
-      raise TrelloCli::Error, "Label already exists: #{name}. Names must be unique to stay addressable."
-    end
+    raise duplicate_error(name) if exists?(client, config, name)
 
     client.post("/labels", { name: name, color: color, idBoard: config.board_id })
   end
 
   def self.rename(client, config, name, new_name)
-    label = find_by_name(client, config, name)
-    if exists?(client, config, new_name)
-      raise TrelloCli::Error, "Label already exists: #{new_name}. Names must be unique to stay addressable."
+    # A blank target is refused here even though create allows one. Renaming a
+    # named label to "" destroys the only handle it can be found by again;
+    # creating a colour-only label never had such a handle to lose.
+    if normalize(new_name).strip.empty?
+      raise TrelloCli::Error,
+            "Label name cannot be blank: labels are addressed by name, " \
+            "so \"#{name}\" could not be found again."
     end
+
+    labels = all(client, config)
+    label = find_in(labels, name)
+    raise TrelloCli::NotFoundError, "Label not found: #{name}" unless label
+
+    # Collision is decided by identity, not by name — a label must never be
+    # found to collide with itself, or a pure case change would be impossible.
+    clash = find_in(labels, new_name)
+    raise duplicate_error(new_name) if clash && clash["id"] != label["id"]
 
     client.put("/labels/#{label['id']}", { name: new_name })
   end
@@ -60,4 +82,6 @@ class TrelloCli::Api::Label
 
     client.delete("/labels/#{label['id']}")
   end
+
+  private_class_method :normalize, :find_in, :duplicate_error
 end

@@ -26,7 +26,10 @@ RSpec.describe TrelloCli::Cli::KindCommand do
 
     stub_request(:get, "https://api.trello.com/1/boards/test_board/labels")
       .with(query: auth)
-      .to_return(status: 200, body: [{ "id" => "l1", "name" => "bug", "color" => "red" }].to_json,
+      .to_return(status: 200,
+                 body: [{ "id" => "l1", "name" => "bug", "color" => "red" },
+                        { "id" => "l2", "name" => "feature", "color" => "green" },
+                        { "id" => "l3", "name" => "chore", "color" => "blue" }].to_json,
                  headers: { "Content-Type" => "application/json" })
 
     stub_request(:post, "https://api.trello.com/1/cards")
@@ -72,6 +75,54 @@ RSpec.describe TrelloCli::Cli::KindCommand do
       expect(
         a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
           JSON.parse(req.body)["desc"].include?("## Steps to Recreate\n1. Open Reports\n2. Click Export")
+        }
+      ).to have_been_made.once
+    end
+  end
+
+  describe "a valid feature" do
+    let(:argv) do
+      ["feature", "new", "Let reviewers filter the queue",
+       "--what", "A filter control on the review queue",
+       "--why", "Reviewers cannot find their own work",
+       "--done-when", "Given a shared queue", "When I filter by my name", "Then only my cards remain"]
+    end
+
+    it "exits zero" do
+      expect(run(argv)).to eq(0)
+    end
+
+    it "applies the feature label and sends the gherkin lines" do
+      run(argv)
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+          body = JSON.parse(req.body)
+          body["idLabels"] == "l2" &&
+            body["desc"].include?("## Done when\nGiven a shared queue\nWhen I filter by my name\nThen only my cards remain")
+        }
+      ).to have_been_made.once
+    end
+  end
+
+  describe "a valid chore" do
+    let(:argv) do
+      ["chore", "new", "Drop the unused legacy_sessions table",
+       "--what", "Remove the table and its model",
+       "--why-now", "It blocks the session-store migration",
+       "--done-when", "The table is gone and no code references it"]
+    end
+
+    it "exits zero" do
+      expect(run(argv)).to eq(0)
+    end
+
+    it "applies the chore label and uses the chore headings" do
+      run(argv)
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+          body = JSON.parse(req.body)
+          body["idLabels"] == "l3" &&
+            body["desc"].include?("## Why now\nIt blocks the session-store migration")
         }
       ).to have_been_made.once
     end

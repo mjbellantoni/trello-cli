@@ -168,6 +168,32 @@ RSpec.describe TrelloCli::Api::Config do
     ensure
       ENV.delete("TRELLO_BUG_WORD_CAP")
     end
+
+    it "raises ConfigError for a non-numeric override" do
+      ENV["TRELLO_BUG_WORD_CAP"] = "abc"
+      expect { described_class.new.word_cap_for(:bug) }.to raise_error(TrelloCli::ConfigError, /whole number/)
+    ensure
+      ENV.delete("TRELLO_BUG_WORD_CAP")
+    end
+
+    it "reads a leading-zero override as base ten" do
+      ENV["TRELLO_BUG_WORD_CAP"] = "050"
+      expect(described_class.new.word_cap_for(:bug)).to eq(50)
+    ensure
+      ENV.delete("TRELLO_BUG_WORD_CAP")
+    end
+
+    it "falls back to the default for a whitespace-only override" do
+      ENV["TRELLO_BUG_WORD_CAP"] = "   "
+      expect(described_class.new.word_cap_for(:bug)).to eq(200)
+    ensure
+      ENV.delete("TRELLO_BUG_WORD_CAP")
+    end
+
+    it "has a default cap for every registered kind" do
+      missing = TrelloCli::Kinds.names.reject { |k| described_class::DEFAULT_WORD_CAPS.key?(k) }
+      expect(missing).to be_empty
+    end
   end
 
   describe "#label_for" do
