@@ -14,6 +14,7 @@ require_relative "cli/attach"
 require_relative "cli/comment"
 require_relative "cli/checklist"
 require_relative "cli/list"
+require_relative "cli/label"
 
 require_relative "command_catalog"
 
@@ -32,6 +33,9 @@ class TrelloCli::Cli < Thor
 
   desc "list SUBCOMMAND", "Manage board lists"
   subcommand "list", TrelloCli::Cli::List
+
+  desc "label SUBCOMMAND", "Manage board labels"
+  subcommand "label", TrelloCli::Cli::Label
 
   desc "commands", "List available commands (use --json for machine-readable output)"
   option :json, type: :boolean, desc: "Output as JSON"
