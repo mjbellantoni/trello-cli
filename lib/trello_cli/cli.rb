@@ -15,6 +15,7 @@ require_relative "cli/comment"
 require_relative "cli/checklist"
 require_relative "cli/list"
 require_relative "cli/label"
+require_relative "cli/kind_command"
 
 require_relative "command_catalog"
 
@@ -36,6 +37,13 @@ class TrelloCli::Cli < Thor
 
   desc "label SUBCOMMAND", "Manage board labels"
   subcommand "label", TrelloCli::Cli::Label
+
+  TrelloCli::Kinds.names.each do |kind|
+    klass = TrelloCli::Cli::KindCommand.build(kind)
+    TrelloCli::Cli.const_set(kind.to_s.capitalize, klass)
+    desc "#{kind} SUBCOMMAND", TrelloCli::Kinds.fetch(kind)[:summary]
+    subcommand kind.to_s, klass
+  end
 
   desc "commands", "List available commands (use --json for machine-readable output)"
   option :json, type: :boolean, desc: "Output as JSON"
