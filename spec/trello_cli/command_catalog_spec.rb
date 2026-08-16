@@ -43,6 +43,15 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(cmd["options"].map { |o| o["name"] }).to include("--description", "--list", "--label", "--position")
     end
 
+    it "advertises the same position grammar for card new and card move" do
+      position_for = lambda do |name|
+        catalog["commands"].find { |c| c["name"] == name }["options"].find { |o| o["name"] == "--position" }
+      end
+
+      expect(position_for.call("card new")["enum"]).to be_nil
+      expect(position_for.call("card new")["summary"]).to eq(position_for.call("card move")["summary"])
+    end
+
     it "includes card show" do
       cmd = catalog["commands"].find { |c| c["name"] == "card show" }
       expect(cmd).not_to be_nil

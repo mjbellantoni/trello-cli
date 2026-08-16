@@ -146,6 +146,52 @@ RSpec.describe TrelloCli::Api::Card do
     end
   end
 
+  describe ".create" do
+    before do
+      # Stub board lists lookup (used by List.find_by_name)
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/lists")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: [{ "id" => "list1", "name" => "Inbox" }].to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+
+      # Stub the card creation
+      stub_request(:post, "https://api.trello.com/1/cards")
+        .with(query: { key: "test_key", token: "test_token" })
+        .to_return(
+          status: 200,
+          body: { "id" => "card123", "idShort" => 42 }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
+    end
+
+    it "places the card at the top when position is top" do
+      described_class.create(client, config, title: "T", list: "Inbox", position: "top")
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: { key: "test_key", token: "test_token" },
+                body: { name: "T", idList: "list1", idBoard: "test_board", pos: "top" })
+      ).to have_been_made.once
+    end
+
+    it "sends a numeric position as a number" do
+      described_class.create(client, config, title: "T", list: "Inbox", position: "2")
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: { key: "test_key", token: "test_token" },
+                body: { name: "T", idList: "list1", idBoard: "test_board", pos: 2.0 })
+      ).to have_been_made.once
+    end
+
+    it "raises Error for an invalid position" do
+      expect {
+        described_class.create(client, config, title: "T", list: "Inbox", position: "abc")
+      }.to raise_error(TrelloCli::Error, /position/i)
+    end
+  end
+
   describe ".move" do
     before do
       # Stub card lookup by short number
