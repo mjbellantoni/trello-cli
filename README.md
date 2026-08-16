@@ -50,6 +50,25 @@ trello card update #123 -d "New description"
 trello card update #123 -t "New title"
 ```
 
+`card show` reports the card's current list and assigned members, so a
+`card move` or `card assign` can be verified without going to the API.
+
+### Assigning members
+
+```bash
+trello card assign #123 collinreed        # username
+trello card assign #123 "Collin Reed"     # full name
+trello card assign #123 CR                # initials
+trello card unassign #123 collinreed
+```
+
+A member is matched by username first, then full name, then initials, all
+case-insensitively. Username wins because Trello guarantees it is unique. If
+nothing matches, the error lists the board's members.
+
+Both commands are idempotent — assigning someone already on the card, or
+unassigning someone who is not, succeeds rather than failing.
+
 ### Filing cards by kind
 
 Each command applies its label, assembles the standard headings, and puts the
@@ -102,6 +121,11 @@ Deleting a label that is still on cards is refused. Set
 ### Lists
 
 ```bash
+trello list all                           # one list name per line
+trello list all --count                   # append each list's open card count
+trello list all --format id-name          # id, name, or id-name
+trello list all --format id-name --count
+
 trello list cards "Doing"
 trello list cards "Doing" --format id
 trello list cards "Doing" --format name
