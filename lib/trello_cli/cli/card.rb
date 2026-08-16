@@ -24,7 +24,7 @@ class TrelloCli::Cli::Card < Thor
   option :description, type: :string, aliases: "-d", desc: "Card description (markdown)"
   option :list, type: :string, aliases: "-l", desc: "List name (defaults to config default_list)"
   option :label, type: :array, aliases: "-L", default: [], desc: "Labels to add (repeatable)"
-  option :position, type: :string, aliases: "-p", enum: %w[top bottom], desc: "Position in list (top or bottom)"
+  option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
   def new(title)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
