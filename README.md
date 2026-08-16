@@ -56,15 +56,20 @@ trello card update #123 -t "New title"
 ### Assigning members
 
 ```bash
-trello card assign #123 collinreed        # username
-trello card assign #123 "Collin Reed"     # full name
-trello card assign #123 CR                # initials
-trello card unassign #123 collinreed
+trello card assign #123 collinstewart12   # username
+trello card assign #123 "Collin Stewart"  # full name
+trello card assign #123 CS                # initials
+trello card assign #123 collin            # unambiguous prefix
+trello card unassign #123 collin
 ```
 
-A member is matched by username first, then full name, then initials, all
-case-insensitively. Username wins because Trello guarantees it is unique. If
-nothing matches, the error lists the board's members.
+A member is matched case-insensitively by username, then full name, then
+initials. Username wins because Trello guarantees it is unique. Every exact
+match is tried before any prefix match, so someone whose whole name is another
+member's prefix is never shadowed.
+
+If nothing matches, the error lists the board's members. If a prefix names two
+people, the command refuses and lists the candidates rather than picking one.
 
 Both commands are idempotent — assigning someone already on the card, or
 unassigning someone who is not, succeeds rather than failing.

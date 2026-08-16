@@ -60,6 +60,45 @@ RSpec.describe TrelloCli::Api::Member do
       expect(described_class.find_by_name(client, config, "ambiguous")["id"]).to eq("m1")
     end
 
+    # Real usernames carry noise a caller will not type: collinstewart12,
+    # matthew_rl. Exact-only matching makes the obvious guess fail.
+    it "matches a username by prefix" do
+      expect(described_class.find_by_name(client, config, "collin")["id"]).to eq("m2")
+    end
+
+    it "matches a full name by prefix" do
+      expect(described_class.find_by_name(client, config, "Matthew")["id"]).to eq("m1")
+    end
+
+    # An exact hit must never be shadowed by someone else's longer name.
+    it "prefers an exact match over a prefix match" do
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/members")
+        .with(query: auth.merge(fields: "id,username,fullName,initials"))
+        .to_return(status: 200, body: [
+          { "id" => "m1", "username" => "samantha", "fullName" => "Samantha Ray", "initials" => "SR" },
+          { "id" => "m2", "username" => "sam", "fullName" => "Sam Patel", "initials" => "SP" }
+        ].to_json, headers: { "Content-Type" => "application/json" })
+
+      expect(described_class.find_by_name(client, config, "sam")["id"]).to eq("m2")
+    end
+
+    it "refuses an ambiguous prefix rather than guessing" do
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/members")
+        .with(query: auth.merge(fields: "id,username,fullName,initials"))
+        .to_return(status: 200, body: [
+          { "id" => "m1", "username" => "collinstewart12", "fullName" => "Collin Stewart", "initials" => "CS" },
+          { "id" => "m2", "username" => "collinsmith", "fullName" => "Collin Smith", "initials" => "CS" }
+        ].to_json, headers: { "Content-Type" => "application/json" })
+
+      expect { described_class.find_by_name(client, config, "collin") }
+        .to raise_error(TrelloCli::Error, <<~MESSAGE.strip)
+          Member is ambiguous: collin
+          Matches:
+            collinstewart12 Collin Stewart
+            collinsmith     Collin Smith
+        MESSAGE
+    end
+
     it "raises NotFoundError when nobody matches" do
       expect { described_class.find_by_name(client, config, "nobody") }
         .to raise_error(TrelloCli::NotFoundError)
