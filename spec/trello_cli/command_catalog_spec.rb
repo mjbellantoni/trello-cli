@@ -136,6 +136,29 @@ RSpec.describe TrelloCli::CommandCatalog do
       cmd = catalog["commands"].find { |c| c["name"] == "label delete" }
       expect(cmd["options"].map { |o| o["name"] }).not_to include("--force")
     end
+
+    it "advertises the kind commands with their required fields" do
+      cmd = catalog["commands"].find { |c| c["name"] == "bug new" }
+      expect(cmd).not_to be_nil
+      expect(cmd["args"].map { |a| a["name"] }).to eq(["TITLE"])
+
+      required = cmd["options"].select { |o| o["required"] }.map { |o| o["name"] }
+      expect(required).to contain_exactly("--steps", "--expected", "--actual")
+    end
+
+    it "advertises done-when on feature and chore" do
+      %w[feature chore].each do |kind|
+        cmd = catalog["commands"].find { |c| c["name"] == "#{kind} new" }
+        expect(cmd["options"].map { |o| o["name"] }).to include("--done-when")
+      end
+    end
+
+    it "offers no force flag on any kind command" do
+      TrelloCli::Kinds.names.each do |kind|
+        cmd = catalog["commands"].find { |c| c["name"] == "#{kind} new" }
+        expect(cmd["options"].map { |o| o["name"] }).not_to include("--force")
+      end
+    end
   end
 
   describe "command shape" do
