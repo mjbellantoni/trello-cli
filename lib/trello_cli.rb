@@ -11,6 +11,7 @@ end
 
 require_relative "trello_cli/word_count"
 require_relative "trello_cli/kinds"
+require_relative "trello_cli/kind_description"
 
 require_relative "trello_cli/api"
 require_relative "trello_cli/api/config"
