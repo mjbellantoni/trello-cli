@@ -9,6 +9,8 @@ class TrelloCli::Api::Config
     File.join(Dir.home, ".trello.yml")
   ].freeze
 
+  DEFAULT_WORD_CAPS = { bug: 200, feature: 150, chore: 150 }.freeze
+
   def self.load
     path = CONFIG_FILES.find { |p| File.exist?(p) }
     file_config = path ? YAML.safe_load_file(path) : {}
@@ -38,5 +40,19 @@ class TrelloCli::Api::Config
 
   def token
     ENV["TRELLO_TOKEN"]
+  end
+
+  def word_cap_for(kind)
+    override = ENV["TRELLO_#{kind.to_s.upcase}_WORD_CAP"]
+    return DEFAULT_WORD_CAPS.fetch(kind) if override.nil? || override.empty?
+
+    Integer(override)
+  end
+
+  def label_for(kind)
+    override = ENV["TRELLO_#{kind.to_s.upcase}_LABEL"]
+    return kind.to_s if override.nil? || override.empty?
+
+    override
   end
 end

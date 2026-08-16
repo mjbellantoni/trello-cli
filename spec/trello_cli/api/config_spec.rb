@@ -148,4 +148,40 @@ RSpec.describe TrelloCli::Api::Config do
       expect(config.default_list).to eq("list-1")
     end
   end
+
+  describe "#word_cap_for" do
+    it "defaults to 200 for a bug" do
+      expect(described_class.new.word_cap_for(:bug)).to eq(200)
+    end
+
+    it "defaults to 150 for a feature" do
+      expect(described_class.new.word_cap_for(:feature)).to eq(150)
+    end
+
+    it "defaults to 150 for a chore" do
+      expect(described_class.new.word_cap_for(:chore)).to eq(150)
+    end
+
+    it "reads an override from the environment as an integer" do
+      ENV["TRELLO_BUG_WORD_CAP"] = "80"
+      expect(described_class.new.word_cap_for(:bug)).to eq(80)
+    ensure
+      ENV.delete("TRELLO_BUG_WORD_CAP")
+    end
+  end
+
+  describe "#label_for" do
+    it "defaults to the lowercase kind name" do
+      expect(described_class.new.label_for(:bug)).to eq("bug")
+      expect(described_class.new.label_for(:feature)).to eq("feature")
+      expect(described_class.new.label_for(:chore)).to eq("chore")
+    end
+
+    it "reads an override from the environment" do
+      ENV["TRELLO_CHORE_LABEL"] = "maintenance"
+      expect(described_class.new.label_for(:chore)).to eq("maintenance")
+    ensure
+      ENV.delete("TRELLO_CHORE_LABEL")
+    end
+  end
 end
