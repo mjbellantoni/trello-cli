@@ -207,6 +207,24 @@ RSpec.describe TrelloCli::CommandCatalog do
       end
     end
 
+    it "shows every required option in the example" do
+      catalog["commands"].each do |cmd|
+        required = cmd["options"].select { |o| o["required"] }.map { |o| o["name"] }
+        next if required.empty?
+
+        example = cmd["examples"].first
+        required.each do |name|
+          expect(example).to include("#{name} "),
+                             "example for '#{cmd['name']}' omits required #{name}: #{example}"
+        end
+      end
+    end
+
+    it "shows two values for a required array option in the example" do
+      cmd = catalog["commands"].find { |c| c["name"] == "chore new" }
+      expect(cmd["examples"].first).to include("--done-when A B")
+    end
+
     it "every option has required fields" do
       catalog["commands"].each do |cmd|
         cmd["options"].each do |opt|
