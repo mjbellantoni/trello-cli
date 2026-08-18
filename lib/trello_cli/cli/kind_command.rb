@@ -4,6 +4,16 @@
 # rejection happens before the first HTTP call, so a refused card never reaches
 # Trello. There is deliberately no bypass flag — see the design document.
 class TrelloCli::Cli::KindCommand
+  LIST_FORMATS = %i[numbered lines].freeze
+
+  # Fields rendered as a list take a Thor :array option. Those are declared
+  # `repeatable`, so Thor collects each occurrence of the flag into its own
+  # array: `--steps A B --steps C` arrives as [["A", "B"], ["C"]]. Callers
+  # flatten it, which leaves the single-flag form untouched.
+  def self.list_field?(field)
+    LIST_FORMATS.include?(field[:format])
+  end
+
   def self.build(kind)
     definition = TrelloCli::Kinds.fetch(kind)
 
@@ -12,18 +22,24 @@ class TrelloCli::Cli::KindCommand
 
       desc "new TITLE", definition[:summary]
       definition[:fields].each do |field|
+        list = TrelloCli::Cli::KindCommand.list_field?(field)
         method_option field[:flag],
-                      type: %i[numbered lines].include?(field[:format]) ? :array : :string,
+                      type: list ? :array : :string,
+                      repeatable: list,
                       required: field[:required],
                       desc: field[:desc]
       end
       method_option :list, type: :string, aliases: "-l", desc: "List name (defaults to config default_list)"
-      method_option :label, type: :array, aliases: "-L", default: [], desc: "Extra labels (repeatable)"
+      method_option :label, type: :array, aliases: "-L", repeatable: true, default: [],
+                    desc: "Extra labels, one per value: --label A B or --label A --label B"
       method_option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
 
       define_method(:new) do |title|
         config = TrelloCli::Api::Config.load
-        values = definition[:fields].to_h { |f| [f[:flag], options[f[:flag].to_s]] }
+        values = definition[:fields].to_h do |f|
+          raw = options[f[:flag].to_s]
+          [f[:flag], TrelloCli::Cli::KindCommand.list_field?(f) ? Array(raw).flatten : raw]
+        end
 
         result = TrelloCli::KindValidator.call(
           kind: kind, title: title, values: values, cap: config.word_cap_for(kind)
@@ -40,7 +56,7 @@ class TrelloCli::Cli::KindCommand
           title: title,
           description: result.description,
           list: options[:list],
-          labels: [config.label_for(kind)] + Array(options[:label]),
+          labels: [config.label_for(kind)] + Array(options[:label]).flatten,
           position: options[:position] || "top"
         )
 

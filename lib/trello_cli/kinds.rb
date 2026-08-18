@@ -11,7 +11,7 @@ module TrelloCli
         summary: "Create a new bug card",
         fields: [
           { flag: :steps, heading: "Steps to Recreate", required: true, format: :numbered,
-            desc: "Steps to recreate, one per value (repeatable)" },
+            desc: "Steps to recreate, one per value: --steps A B or --steps A --steps B" },
           { flag: :expected, heading: "Expected Behavior", required: true, format: :text,
             desc: "What should have happened" },
           { flag: :actual, heading: "Actual Behavior", required: true, format: :text,
@@ -29,7 +29,7 @@ module TrelloCli
           { flag: :why, heading: "Why", required: true, format: :text,
             desc: "Who wants it and what it unblocks" },
           { flag: :done_when, heading: "Done when", required: true, format: :lines,
-            desc: "Given/When/Then acceptance criteria (repeatable)" },
+            desc: "Given/When/Then acceptance criteria, one per value: --done-when A B or --done-when A --done-when B" },
           { flag: :notes, heading: "Notes", required: false, format: :text,
             desc: "Links and evidence only" }
         ]
@@ -42,7 +42,7 @@ module TrelloCli
           { flag: :why_now, heading: "Why now", required: true, format: :text,
             desc: "What makes this worth doing now" },
           { flag: :done_when, heading: "Done when", required: true, format: :lines,
-            desc: "Observable completion condition (repeatable)" },
+            desc: "Observable completion condition, one per value: --done-when A B or --done-when A --done-when B" },
           { flag: :notes, heading: "Notes", required: false, format: :text,
             desc: "Links and evidence only" }
         ]

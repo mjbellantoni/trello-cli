@@ -98,6 +98,16 @@ trello chore new "Drop the unused legacy_sessions table" \
   --done-when "The table is gone and no code references it"
 ```
 
+List-valued flags — `--steps`, `--done-when`, `--label` — accept either form:
+several values after one flag, or the flag repeated. Both build the same list.
+
+```bash
+trello chore new "Drop the unused legacy_sessions table" \
+  --what "Remove the table and its model" \
+  --why-now "It blocks the session-store migration next sprint" \
+  --done-when "The table is gone" --done-when "No code references it"
+```
+
 Word caps are 200 words for a bug and 150 for a feature or chore, counted across
 the whole assembled description including headings. Over the cap, the card is
 either more than one card — split it — or the detail belongs in an attachment.

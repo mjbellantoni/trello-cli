@@ -64,6 +64,7 @@ module TrelloCli
           "type" => opt.type.to_s
         }
         entry["aliases"] = opt.aliases if opt.aliases&.any?
+        entry["repeatable"] = true if opt.respond_to?(:repeatable) && opt.repeatable
         unless opt.default.nil? || (opt.default.respond_to?(:empty?) && opt.default.empty?)
           entry["default"] = opt.default
         end

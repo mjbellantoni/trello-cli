@@ -182,4 +182,62 @@ RSpec.describe TrelloCli::Cli::KindCommand do
       expect(a_request(:post, "https://api.trello.com/1/cards")).not_to have_been_made
     end
   end
+
+  describe "repeated flags" do
+    it "accumulates repeated --done-when flags into one list" do
+      run(["feature", "new", "Let reviewers filter the queue",
+           "--what", "A filter control on the review queue",
+           "--why", "Reviewers cannot find their own work",
+           "--done-when", "Given a shared queue",
+           "--done-when", "When I filter by my name",
+           "--done-when", "Then only my cards remain"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+          JSON.parse(req.body)["desc"].include?(
+            "## Done when\nGiven a shared queue\nWhen I filter by my name\nThen only my cards remain"
+          )
+        }
+      ).to have_been_made.once
+    end
+
+    it "accumulates repeated --steps flags into one numbered list" do
+      run(["bug", "new", "Export times out",
+           "--steps", "Open Reports",
+           "--steps", "Click Export",
+           "--expected", "CSV downloads.",
+           "--actual", "Spinner hangs."])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+          JSON.parse(req.body)["desc"].include?("## Steps to Recreate\n1. Open Reports\n2. Click Export")
+        }
+      ).to have_been_made.once
+    end
+
+    it "accumulates repeated --label flags alongside the kind label" do
+      run(valid_bug_argv + ["--label", "feature", "--label", "chore"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("idLabels" => "l1,l2,l3"))
+      ).to have_been_made.once
+    end
+
+    it "still accepts several values after a single flag" do
+      run(["feature", "new", "Let reviewers filter the queue",
+           "--what", "A filter control on the review queue",
+           "--why", "Reviewers cannot find their own work",
+           "--done-when", "Given a shared queue", "When I filter by my name", "Then only my cards remain"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+          JSON.parse(req.body)["desc"].include?(
+            "## Done when\nGiven a shared queue\nWhen I filter by my name\nThen only my cards remain"
+          )
+        }
+      ).to have_been_made.once
+    end
+  end
+
 end

@@ -161,6 +161,22 @@ RSpec.describe TrelloCli::CommandCatalog do
       end
     end
 
+    it "marks every array option repeatable" do
+      array_options = catalog["commands"].flat_map { |c| c["options"] }.select { |o| o["type"] == "array" }
+
+      expect(array_options).not_to be_empty
+      expect(array_options.map { |o| o["repeatable"] }).to all(be(true))
+    end
+
+    it "spells out the multi-value form in every array option summary" do
+      array_options = catalog["commands"].flat_map { |c| c["options"] }.select { |o| o["type"] == "array" }
+
+      array_options.each do |opt|
+        expect(opt["summary"]).to include("#{opt['name']} A #{opt['name']} B"),
+                                  "expected #{opt['name']} summary to show both forms, got: #{opt['summary']}"
+      end
+    end
+
     it "offers no force flag on any kind command" do
       TrelloCli::Kinds.names.each do |kind|
         cmd = catalog["commands"].find { |c| c["name"] == "#{kind} new" }
