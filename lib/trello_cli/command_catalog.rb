@@ -35,7 +35,7 @@ module TrelloCli
           commands << {
             "aliases" => [],
             "args" => args,
-            "examples" => [build_example(canonical, args)],
+            "examples" => [build_example(canonical, args, opts)],
             "name" => canonical,
             "options" => opts,
             "outputs" => ["text"],
@@ -47,10 +47,22 @@ module TrelloCli
       commands.sort_by { |c| c["name"] }
     end
 
-    def build_example(canonical, args)
+    # An example a caller can run: every positional arg, then every required
+    # option. Array options show two values, because that form is the one
+    # callers get wrong.
+    def build_example(canonical, args, opts)
       parts = ["trello", canonical]
       args.each { |a| parts << a["name"] }
+      opts.select { |o| o["required"] }.each do |opt|
+        parts << opt["name"] << placeholder(opt)
+      end
       parts.join(" ")
+    end
+
+    def placeholder(opt)
+      return "A B" if opt["type"] == "array"
+
+      opt["name"].delete_prefix("--").tr("-", "_").upcase
     end
 
     def build_options(command)
