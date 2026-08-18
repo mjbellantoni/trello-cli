@@ -49,7 +49,8 @@ class TrelloCli::Cli::Card < Thor
   desc "new TITLE", "Create a new card"
   option :description, type: :string, aliases: "-d", desc: "Card description (markdown)"
   option :list, type: :string, aliases: "-l", desc: "List name (defaults to config default_list)"
-  option :label, type: :array, aliases: "-L", default: [], desc: "Labels to add (repeatable)"
+  option :label, type: :array, aliases: "-L", repeatable: true, default: [],
+         desc: "Labels to add, one per value: --label A B or --label A --label B"
   option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
   def new(title)
     config = TrelloCli::Api::Config.load
@@ -61,7 +62,7 @@ class TrelloCli::Cli::Card < Thor
       title: title,
       description: options[:description],
       list: options[:list],
-      labels: options[:label],
+      labels: Array(options[:label]).flatten,
       position: options[:position]
     )
 
