@@ -53,6 +53,29 @@ trello card update #123 -t "New title"
 `card show` reports the card's current list and assigned members, so a
 `card move` or `card assign` can be verified without going to the API.
 
+### Due dates
+
+`card new`, `card update` and the `bug` / `feature` / `chore` commands all take
+`--due` (`-D`):
+
+```bash
+trello card new "Ship the release" --due 2026-09-15
+trello card new "Ship the release" --due 2026-09-15T17:00
+trello card new "Ship the release" --due tomorrow
+trello card update #123 --due +3d
+trello card update #123 --due none            # clear the due date
+trello card update #123 --due-complete        # check it off
+trello card update #123 --no-due-complete     # uncheck it
+```
+
+Accepted forms are `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM` (with optional seconds and
+an optional `Z` or `±HH:MM` offset), `today`, `tomorrow`, `+Nd`, `+Nw`, and
+`none`. A form without a time lands at noon local time, which is where Trello's
+own date picker puts it. Anything else is rejected before the card is touched.
+
+`card show` prints the due date in local time, marked `(overdue)` when it has
+passed and `(complete)` once it is checked off.
+
 ### Assigning members
 
 ```bash

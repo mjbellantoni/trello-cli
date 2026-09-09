@@ -33,6 +33,8 @@ class TrelloCli::Cli::KindCommand
       method_option :label, type: :array, aliases: "-L", repeatable: true, default: [],
                     desc: "Extra labels, one per value: --label A B or --label A --label B"
       method_option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
+      method_option :due, type: :string, aliases: "-D",
+                    desc: "Due date: YYYY-MM-DD, YYYY-MM-DDTHH:MM, today, tomorrow, +Nd, or +Nw"
 
       define_method(:new) do |title|
         config = TrelloCli::Api::Config.load
@@ -57,7 +59,8 @@ class TrelloCli::Cli::KindCommand
           description: result.description,
           list: options[:list],
           labels: [config.label_for(kind)] + Array(options[:label]).flatten,
-          position: options[:position] || "top"
+          position: options[:position] || "top",
+          due: options[:due]
         )
 
         say "Created: #{card['shortUrl']}", :green
