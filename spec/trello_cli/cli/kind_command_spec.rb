@@ -61,6 +61,28 @@ RSpec.describe TrelloCli::Cli::KindCommand do
       expect(run(valid_bug_argv)).to eq(0)
     end
 
+    it "sends a due date given with --due" do
+      run(valid_bug_argv + ["--due", "2026-09-15T17:00Z"])
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("due" => "2026-09-15T17:00:00Z"))
+      ).to have_been_made.once
+    end
+
+    it "omits due when --due is not given" do
+      run(valid_bug_argv)
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+          !JSON.parse(req.body).key?("due")
+        }
+      ).to have_been_made.once
+    end
+
+    it "exits non-zero on an invalid due date without creating a card" do
+      expect(run(valid_bug_argv + ["--due", "whenever"])).to eq(1)
+      expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth)).not_to have_been_made
+    end
+
     it "creates the card at the top of the default list with the kind label" do
       run(valid_bug_argv)
       expect(

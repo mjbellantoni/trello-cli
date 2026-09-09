@@ -61,7 +61,7 @@ class TrelloCli::Api::Card
                  list: "true", members: "true" })
   end
 
-  def self.create(client, config, title:, description: nil, list: nil, labels: [], position: nil)
+  def self.create(client, config, title:, description: nil, list: nil, labels: [], position: nil, due: nil)
     list_name = list || config.default_list
     list_data = TrelloCli::Api::List.find_by_name(client, config, list_name)
 
@@ -73,6 +73,7 @@ class TrelloCli::Api::Card
     body[:desc] = description if description
     body[:idLabels] = resolve_labels(client, config, labels).join(",") if labels.any?
     body[:pos] = TrelloCli::Api::Position.parse(position) unless position.nil?
+    body[:due] = TrelloCli::Api::DueDate.parse(due) unless due.nil?
 
     client.post("/cards", body)
   end
@@ -86,12 +87,16 @@ class TrelloCli::Api::Card
     client.put("/cards/#{card_id}", body)
   end
 
-  def self.update(client, config, card_ref, description: nil, name: nil)
+  # A nil `due` leaves the date alone; "none" parses to nil and is sent as
+  # `due: null`, which is how Trello clears it.
+  def self.update(client, config, card_ref, description: nil, name: nil, due: nil, due_complete: nil)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
     body = {}
     body[:desc] = description unless description.nil?
     body[:name] = name unless name.nil?
+    body[:due] = TrelloCli::Api::DueDate.parse(due) unless due.nil?
+    body[:dueComplete] = due_complete unless due_complete.nil?
     client.put("/cards/#{card_id}", body)
   end
 

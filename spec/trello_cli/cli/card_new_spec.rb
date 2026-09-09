@@ -76,4 +76,40 @@ RSpec.describe "card new" do
       }
     ).to have_been_made.once
   end
+
+  it "sends a due date given with --due" do
+    run(["card", "new", "A card", "--due", "2026-09-15T17:00Z"])
+
+    expect(
+      a_request(:post, "https://api.trello.com/1/cards")
+        .with(query: auth, body: hash_including("due" => "2026-09-15T17:00:00Z"))
+    ).to have_been_made.once
+  end
+
+  it "accepts the -D alias for --due" do
+    run(["card", "new", "A card", "-D", "2026-09-15T17:00Z"])
+
+    expect(
+      a_request(:post, "https://api.trello.com/1/cards")
+        .with(query: auth, body: hash_including("due" => "2026-09-15T17:00:00Z"))
+    ).to have_been_made.once
+  end
+
+  it "omits due when --due is not given" do
+    run(["card", "new", "A card"])
+
+    expect(
+      a_request(:post, "https://api.trello.com/1/cards").with(query: auth) { |req|
+        !JSON.parse(req.body).key?("due")
+      }
+    ).to have_been_made.once
+  end
+
+  it "reports an invalid due date and creates nothing" do
+    expect { run(["card", "new", "A card", "--due", "whenever"]) }
+      .to raise_error(SystemExit)
+
+    expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth))
+      .not_to have_been_made
+  end
 end

@@ -190,6 +190,30 @@ RSpec.describe TrelloCli::Api::Card do
         described_class.create(client, config, title: "T", list: "Inbox", position: "abc")
       }.to raise_error(TrelloCli::Error, /position/i)
     end
+
+    it "sends a due date as an ISO 8601 UTC string" do
+      described_class.create(client, config, title: "T", list: "Inbox", due: "2026-09-15T17:00Z")
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: { key: "test_key", token: "test_token" },
+                body: { name: "T", idList: "list1", idBoard: "test_board", due: "2026-09-15T17:00:00Z" })
+      ).to have_been_made.once
+    end
+
+    it "omits due when no due date is given" do
+      described_class.create(client, config, title: "T", list: "Inbox")
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: { key: "test_key", token: "test_token" },
+                body: { name: "T", idList: "list1", idBoard: "test_board" })
+      ).to have_been_made.once
+    end
+
+    it "raises Error for an invalid due date" do
+      expect {
+        described_class.create(client, config, title: "T", list: "Inbox", due: "whenever")
+      }.to raise_error(TrelloCli::Error, /due date/i)
+    end
   end
 
   describe ".move" do
@@ -304,6 +328,44 @@ RSpec.describe TrelloCli::Api::Card do
         a_request(:put, "https://api.trello.com/1/cards/card123")
           .with(query: { key: "test_key", token: "test_token" }, body: { desc: "New desc", name: "New title" })
       ).to have_been_made.once
+    end
+
+    it "sets the due date as an ISO 8601 UTC string" do
+      described_class.update(client, config, "#42", due: "2026-09-15T17:00Z")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { due: "2026-09-15T17:00:00Z" })
+      ).to have_been_made.once
+    end
+
+    it "sends a null due date for none" do
+      described_class.update(client, config, "#42", due: "none")
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { due: nil })
+      ).to have_been_made.once
+    end
+
+    it "marks the due date complete" do
+      described_class.update(client, config, "#42", due_complete: true)
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { dueComplete: true })
+      ).to have_been_made.once
+    end
+
+    it "marks the due date incomplete" do
+      described_class.update(client, config, "#42", due_complete: false)
+      expect(
+        a_request(:put, "https://api.trello.com/1/cards/card123")
+          .with(query: { key: "test_key", token: "test_token" }, body: { dueComplete: false })
+      ).to have_been_made.once
+    end
+
+    it "raises Error for an invalid due date" do
+      expect {
+        described_class.update(client, config, "#42", due: "whenever")
+      }.to raise_error(TrelloCli::Error, /due date/i)
     end
   end
 end

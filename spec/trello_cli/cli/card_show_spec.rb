@@ -163,6 +163,56 @@ RSpec.describe "card show" do
     end
   end
 
+  # Trello returns `due` in UTC; show renders it in the caller's local zone, so
+  # these examples pin a zone. The dates are far enough from today that overdue
+  # is decided without freezing the clock.
+  describe "due dates" do
+    around do |example|
+      saved = ENV["TZ"]
+      ENV["TZ"] = "America/New_York"
+      example.run
+    ensure
+      ENV["TZ"] = saved
+    end
+
+    def stub_due(due, due_complete: false)
+      stub_card("name" => "Dated", "shortUrl" => "https://trello.com/c/dated123",
+                "list" => { "name" => "Inbox" },
+                "due" => due, "dueComplete" => due_complete)
+    end
+
+    it "renders the due date in local time after the list" do
+      stub_due("2099-09-15T16:00:00.000Z")
+
+      expect(show).to include("List: Inbox\nDue: Sep 15, 2099 12:00pm\n")
+    end
+
+    it "marks a past due date overdue" do
+      stub_due("2020-01-01T14:00:00.000Z")
+
+      expect(show).to include("Due: Jan 1, 2020 9:00am (overdue)\n")
+    end
+
+    it "marks a completed due date complete rather than overdue" do
+      stub_due("2020-01-01T14:00:00.000Z", due_complete: true)
+
+      expect(show).to include("Due: Jan 1, 2020 9:00am (complete)\n")
+    end
+
+    it "does not call a future due date overdue" do
+      stub_due("2099-09-15T16:00:00.000Z")
+
+      expect(show).not_to include("overdue")
+    end
+
+    it "omits the due line when the card has no due date" do
+      stub_card("name" => "Dateless", "shortUrl" => "https://trello.com/c/none1234",
+                "list" => { "name" => "Inbox" }, "due" => nil)
+
+      expect(show).not_to include("Due:")
+    end
+  end
+
   # The API omits `list` for a card that has been archived out of every list,
   # and show must not blow up rendering one.
   describe "a card with no list in the payload" do

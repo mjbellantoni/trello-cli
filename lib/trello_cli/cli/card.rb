@@ -7,6 +7,27 @@ class TrelloCli::Cli::Card < Thor
     true
   end
 
+  DUE_FORMAT = "%b %-d, %Y %-l:%M%P"
+
+  # Trello sends `due` in UTC; the caller thinks in local time, so render local.
+  # A completed date is never called overdue, however far past it is.
+  def self.due_line(card)
+    due = Time.parse(card["due"]).getlocal
+    text = due.strftime(DUE_FORMAT)
+    return "#{text} (complete)" if card["dueComplete"]
+    return "#{text} (overdue)" if due < Time.now
+
+    text
+  end
+
+  # "a", "a and b", "a, b, and c" — four updatable fields make the plain
+  # "and" join read badly.
+  def self.sentence(items)
+    return items.join(" and ") if items.size <= 2
+
+    "#{items[0..-2].join(', ')}, and #{items.last}"
+  end
+
   desc "archive REF", "Archive a card"
   def archive(ref)
     config = TrelloCli::Api::Config.load
@@ -52,6 +73,8 @@ class TrelloCli::Cli::Card < Thor
   option :label, type: :array, aliases: "-L", repeatable: true, default: [],
          desc: "Labels to add, one per value: --label A B or --label A --label B"
   option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
+  option :due, type: :string, aliases: "-D",
+         desc: "Due date: YYYY-MM-DD, YYYY-MM-DDTHH:MM, today, tomorrow, +Nd, or +Nw"
   def new(title)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
@@ -63,7 +86,8 @@ class TrelloCli::Cli::Card < Thor
       description: options[:description],
       list: options[:list],
       labels: Array(options[:label]).flatten,
-      position: options[:position]
+      position: options[:position],
+      due: options[:due]
     )
 
     say "Created: #{card['shortUrl']}", :green
@@ -83,6 +107,7 @@ class TrelloCli::Cli::Card < Thor
     say card["name"], :bold
     say "URL: #{card['shortUrl']}"
     say "List: #{card['list']['name']}" if card["list"]
+    say "Due: #{self.class.due_line(card)}" if card["due"]
 
     if card["members"]&.any?
       say "Members: #{card['members'].map { |m| TrelloCli::Api::Member.display_name(m) }.join(', ')}"
@@ -171,21 +196,30 @@ class TrelloCli::Cli::Card < Thor
   desc "update REF", "Update card fields"
   option :description, type: :string, aliases: "-d", desc: "New description (markdown)"
   option :title, type: :string, aliases: "-t", desc: "New title"
+  option :due, type: :string, aliases: "-D",
+         desc: "Due date: YYYY-MM-DD, YYYY-MM-DDTHH:MM, today, tomorrow, +Nd, +Nw, or none to clear"
+  option :due_complete, type: :boolean, desc: "Mark the due date complete (--no-due-complete to undo)"
+  # Keyed by flag so the guard, the request and the message all read from one
+  # place; a new updatable field is one entry.
+  UPDATE_FIELDS = { description: "description", title: "title",
+                    due: "due date", due_complete: "due complete" }.freeze
+
   def update(ref)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
 
-    if options[:description].nil? && options[:title].nil?
-      say "Error: No update options provided. Use --description or --title to update.", :red
+    updated = UPDATE_FIELDS.reject { |flag, _| options[flag].nil? }.values
+    if updated.empty?
+      flags = UPDATE_FIELDS.keys.map { |f| "--#{f.to_s.tr('_', '-')}" }.join(", ")
+      say "Error: No update options provided. Use #{flags} to update.", :red
       exit 1
     end
 
-    TrelloCli::Api::Card.update(client, config, ref, description: options[:description], name: options[:title])
+    TrelloCli::Api::Card.update(client, config, ref,
+                                description: options[:description], name: options[:title],
+                                due: options[:due], due_complete: options[:due_complete])
 
-    updated = []
-    updated << "description" unless options[:description].nil?
-    updated << "title" unless options[:title].nil?
-    say "Updated card #{updated.join(' and ')}", :green
+    say "Updated card #{self.class.sentence(updated)}", :green
   rescue TrelloCli::Error => e
     say "Error: #{e.message}", :red
     exit 1
