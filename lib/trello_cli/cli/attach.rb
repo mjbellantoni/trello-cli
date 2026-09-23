@@ -21,6 +21,7 @@ class TrelloCli::Cli::Attach < Thor
 
     attachments.each do |att|
       say att["name"]
+      say "  ID: #{att['id']}"
       say "  URL: #{att['url']}"
       say ""
     end
@@ -70,6 +71,23 @@ class TrelloCli::Cli::Attach < Thor
     attachment = TrelloCli::Api::Attachment.upload(client, card_id, file_path)
 
     say "Uploaded: #{attachment['name']}", :green
+  rescue TrelloCli::Error => e
+    say "Error: #{e.message}", :red
+    exit 1
+  end
+
+  desc "remove REF NAME_OR_ID", "Remove an attachment from a card"
+  def remove(ref, identifier)
+    config = TrelloCli::Api::Config.load
+    client = TrelloCli::Api::Client.new(config)
+
+    card_ref = TrelloCli::Api::CardRef.parse(ref)
+    card_id = card_ref.to_api_id(client, config)
+
+    attachment = TrelloCli::Api::Attachment.find_by_reference(client, card_id, identifier)
+    TrelloCli::Api::Attachment.remove(client, card_id, attachment["id"])
+
+    say "Removed attachment: #{attachment['name']}", :green
   rescue TrelloCli::Error => e
     say "Error: #{e.message}", :red
     exit 1
