@@ -179,7 +179,13 @@ trello list cards "Doing" --with-label "Bug" --format id
 trello attach list #123
 trello attach upload #123 ./file.pdf
 trello attach get #123 file.pdf -o ./downloads/
+trello attach remove #123 file.pdf
 ```
+
+Removing an attachment deletes it from Trello permanently. When a card holds
+more than one attachment with the same name, `remove` refuses to guess and
+lists the matching IDs — pass one of those instead of the name. `attach list`
+shows each attachment's ID.
 
 ### Comments
 
