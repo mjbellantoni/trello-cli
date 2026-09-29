@@ -53,11 +53,20 @@ class TrelloCli::Api::Placement
   # The card being moved is left out — its own pos is about to change, so it
   # must not decide where it lands.
   def position_after(anchor, cards, moving_ref)
+    anchor_pos = pos_of(anchor)
     candidates = moving_ref ? cards.reject { |card| moving_ref.matches?(card) } : cards
-    follower = candidates.select { |card| card["pos"] > anchor["pos"] }
-                         .min_by { |card| card["pos"] }
+    follower = candidates.select { |card| pos_of(card) > anchor_pos }.min_by { |card| pos_of(card) }
     return "bottom" unless follower
 
-    (anchor["pos"] + follower["pos"]) / 2.0
+    (anchor_pos + pos_of(follower)) / 2.0
+  end
+
+  # Trello sends pos as a number, and the arithmetic above is the first thing
+  # in the gem to depend on that. A value it cannot read is worth saying out
+  # loud: guessing would misplace the card and still report success.
+  def pos_of(card)
+    Float(card["pos"])
+  rescue ArgumentError, TypeError
+    raise TrelloCli::Error, "Card ##{card['idShort']} has an unusable position: #{card['pos'].inspect}"
   end
 end

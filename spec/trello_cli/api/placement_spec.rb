@@ -168,4 +168,34 @@ RSpec.describe TrelloCli::Api::Placement do
       end
     end
   end
+
+  # Nothing in the gem has done arithmetic on an API field before, and the
+  # only evidence pos is a number is the stubs in this file.
+  describe "unexpected pos values" do
+    context "when pos arrives as a numeric string" do
+      let(:cards) do
+        [{ "id" => "c1", "idShort" => 10, "shortLink" => "aaa111", "pos" => "65536" },
+         { "id" => "c2", "idShort" => 20, "shortLink" => "bbb222", "pos" => "131072" }]
+      end
+
+      it "orders numerically rather than lexically" do
+        placement = described_class.resolve(client, config, "Doing", after: "#10")
+
+        expect(placement.pos).to eq(98_304.0)
+      end
+    end
+
+    context "when pos is not a number at all" do
+      let(:cards) do
+        [{ "id" => "c1", "idShort" => 10, "shortLink" => "aaa111", "pos" => "top" },
+         { "id" => "c2", "idShort" => 20, "shortLink" => "bbb222", "pos" => 131_072.0 }]
+      end
+
+      it "raises rather than guessing" do
+        expect {
+          described_class.resolve(client, config, "Doing", after: "#10")
+        }.to raise_error(TrelloCli::Error, /position/i)
+      end
+    end
+  end
 end
