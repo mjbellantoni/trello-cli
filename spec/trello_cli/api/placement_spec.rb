@@ -136,4 +136,36 @@ RSpec.describe TrelloCli::Api::Placement do
       expect(placement.pos).to eq("bottom")
     end
   end
+
+  # Trello lists can carry duplicate pos values after bulk imports and some
+  # sort operations. Cards tied with the anchor have no defined order among
+  # themselves, so "after the anchor" can only mean after the whole tie.
+  describe "tied positions" do
+    context "when the anchor is tied with the card below it" do
+      let(:cards) do
+        [{ "id" => "c1", "idShort" => 10, "shortLink" => "aaa111", "pos" => 100.0 },
+         { "id" => "c2", "idShort" => 20, "shortLink" => "bbb222", "pos" => 100.0 },
+         { "id" => "c3", "idShort" => 30, "shortLink" => "ccc333", "pos" => 200.0 }]
+      end
+
+      it "places the card past the tie rather than inside it" do
+        placement = described_class.resolve(client, config, "Doing", after: "#10")
+
+        expect(placement.pos).to eq(150.0)
+      end
+    end
+
+    context "when the tie runs to the end of the list" do
+      let(:cards) do
+        [{ "id" => "c1", "idShort" => 10, "shortLink" => "aaa111", "pos" => 100.0 },
+         { "id" => "c2", "idShort" => 20, "shortLink" => "bbb222", "pos" => 100.0 }]
+      end
+
+      it "sends the card to the bottom" do
+        placement = described_class.resolve(client, config, "Doing", after: "#10")
+
+        expect(placement.pos).to eq("bottom")
+      end
+    end
+  end
 end

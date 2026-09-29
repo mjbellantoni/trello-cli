@@ -45,13 +45,17 @@ class TrelloCli::Api::Placement
     raise TrelloCli::Error, e.message
   end
 
-  # Trello spaces cards far apart, so the midpoint between two neighbours is
-  # always a free slot between them. The card being moved is left out: its own
-  # pos is about to change, so it must not decide where it lands.
+  # Trello spaces cards far apart, so the midpoint between the anchor and the
+  # next card along is a free slot between them. The follower is the nearest
+  # card strictly below the anchor rather than the next one in order: cards
+  # tied with the anchor have no defined order among themselves, so landing
+  # inside a tie would not reliably put this card after the anchor at all.
+  # The card being moved is left out — its own pos is about to change, so it
+  # must not decide where it lands.
   def position_after(anchor, cards, moving_ref)
-    ordered = cards.sort_by { |card| card["pos"] }
-    ordered = ordered.reject { |card| moving_ref.matches?(card) } if moving_ref
-    follower = ordered[ordered.index(anchor) + 1]
+    candidates = moving_ref ? cards.reject { |card| moving_ref.matches?(card) } : cards
+    follower = candidates.select { |card| card["pos"] > anchor["pos"] }
+                         .min_by { |card| card["pos"] }
     return "bottom" unless follower
 
     (anchor["pos"] + follower["pos"]) / 2.0
