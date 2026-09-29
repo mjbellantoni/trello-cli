@@ -52,6 +52,27 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(position_for.call("card new")["summary"]).to eq(position_for.call("card move")["summary"])
     end
 
+    it "advertises --after on every command that places a card" do
+      names = ["card new", "card move", "bug new", "feature new", "chore new"]
+
+      names.each do |name|
+        cmd = catalog["commands"].find { |c| c["name"] == name }
+        after = cmd["options"].find { |o| o["name"] == "--after" }
+        expect(after).not_to be_nil, "expected #{name} to offer --after"
+        expect(after["type"]).to eq("string")
+        expect(after["aliases"]).to eq(["-a"])
+      end
+    end
+
+    it "advertises the same anchor grammar everywhere it appears" do
+      summaries = ["card new", "card move", "bug new"].map do |name|
+        catalog["commands"].find { |c| c["name"] == name }["options"]
+                           .find { |o| o["name"] == "--after" }["summary"]
+      end
+
+      expect(summaries.uniq.size).to eq(1)
+    end
+
     it "includes card show" do
       cmd = catalog["commands"].find { |c| c["name"] == "card show" }
       expect(cmd).not_to be_nil

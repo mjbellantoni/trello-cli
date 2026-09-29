@@ -73,11 +73,15 @@ class TrelloCli::Cli::Card < Thor
   option :label, type: :array, aliases: "-L", repeatable: true, default: [],
          desc: "Labels to add, one per value: --label A B or --label A --label B"
   option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
+  option :after, type: :string, aliases: "-a", desc: "Place directly after this card in the target list"
   option :due, type: :string, aliases: "-D",
          desc: "Due date: YYYY-MM-DD, YYYY-MM-DDTHH:MM, today, tomorrow, +Nd, or +Nw"
   def new(title)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
+
+    placement = TrelloCli::Api::Placement.resolve(client, config, options[:list], after: options[:after],
+                                                                                 position: options[:position])
 
     card = TrelloCli::Api::Card.create(
       client,
@@ -86,12 +90,13 @@ class TrelloCli::Cli::Card < Thor
       description: options[:description],
       list: options[:list],
       labels: Array(options[:label]).flatten,
-      position: options[:position],
+      position: placement&.pos || options[:position],
       due: options[:due]
     )
 
     say "Created: #{card['shortUrl']}", :green
     say "Card ##{card['idShort']}: #{card['name']}" if card["idShort"]
+    say "Placed after ##{placement.anchor_number}", :green if placement
   rescue TrelloCli::Error => e
     say "Error: #{e.message}", :red
     exit 1
@@ -168,13 +173,18 @@ class TrelloCli::Cli::Card < Thor
 
   desc "move REF LIST", "Move a card to a different list"
   option :position, type: :string, aliases: "-p", desc: "Position in target list (top, bottom, or a number)"
+  option :after, type: :string, aliases: "-a", desc: "Place directly after this card in the target list"
   def move(ref, list_name)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
 
-    TrelloCli::Api::Card.move(client, config, ref, list_name, position: options[:position])
+    placement = TrelloCli::Api::Placement.resolve(client, config, list_name, after: options[:after],
+                                                                            position: options[:position], moving: ref)
+
+    TrelloCli::Api::Card.move(client, config, ref, list_name, position: placement&.pos || options[:position])
 
     say "Moved to: #{list_name}", :green
+    say "Placed after ##{placement.anchor_number}", :green if placement
   rescue TrelloCli::Error => e
     say "Error: #{e.message}", :red
     exit 1

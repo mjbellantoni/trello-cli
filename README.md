@@ -46,12 +46,35 @@ trello card new "Task title" -d "Description" -l "List Name" -L label1 label2
 trello card show #123
 trello card move #123 "Done"
 trello card move #123 "Done" -p top   # place at top (top, bottom, or a number)
+trello card move #123 "Done" -a #456  # place directly after card #456
 trello card update #123 -d "New description"
 trello card update #123 -t "New title"
 ```
 
 `card show` reports the card's current list and assigned members, so a
 `card move` or `card assign` can be verified without going to the API.
+
+### Placing a card after another
+
+`--after` (`-a`) puts the card directly below a card already in the target
+list, so a card can land mid-list in one call. It takes any card reference,
+and it works on `card new`, `card move`, and the `bug` / `feature` / `chore`
+commands:
+
+```bash
+trello card new "Ship the export fix" -l "By Aug 30" --after #456
+trello card move #123 "By Aug 30" --after https://trello.com/c/abc123
+trello bug new "Export times out" --after #456 \
+  --steps "Open Reports" --expected "A CSV downloads" --actual "It 504s"
+```
+
+The CLI reads the target list, puts the card halfway between the named card
+and the one below it, and reports where it landed — `Placed after #456`. When
+the named card is last in the list, the new card goes to the bottom.
+
+`--after` and `--position` are mutually exclusive. The command exits non-zero
+and changes nothing when both are given, when the named card is in a different
+list, or when it names the card being moved.
 
 ### Due dates
 
@@ -100,7 +123,8 @@ unassigning someone who is not, succeeds rather than failing.
 ### Filing cards by kind
 
 Each command applies its label, assembles the standard headings, and puts the
-card at the top of your default list. Required fields are required: the command
+card at the top of your default list — or wherever `--position` or `--after`
+says. Required fields are required: the command
 exits non-zero and creates nothing if one is missing or if the description is
 over the word cap.
 

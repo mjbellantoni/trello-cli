@@ -7,6 +7,7 @@ class TrelloCli::Api::Position
 
   def self.parse(position)
     return position if KEYWORDS.include?(position)
+    return position.to_f if position.is_a?(Numeric)
     return Float(position) if position.match?(/\A-?\d+(\.\d+)?\z/)
 
     raise TrelloCli::Error, "Invalid position: #{position} (expected top, bottom, or a number)"

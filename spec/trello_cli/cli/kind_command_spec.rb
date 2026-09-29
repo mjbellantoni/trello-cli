@@ -262,4 +262,81 @@ RSpec.describe TrelloCli::Cli::KindCommand do
     end
   end
 
+  describe "--after" do
+    before do
+      stub_request(:get, "https://api.trello.com/1/lists/list1/cards")
+        .with(query: auth.merge(fields: "idShort,shortLink,pos"))
+        .to_return(status: 200,
+                   body: [{ "id" => "c1", "idShort" => 10, "shortLink" => "aaa111", "pos" => 65_536.0 },
+                          { "id" => "c2", "idShort" => 20, "shortLink" => "bbb222", "pos" => 131_072.0 }].to_json,
+                   headers: { "Content-Type" => "application/json" })
+    end
+
+    # Without an anchor these commands file to the top of the list; an anchor
+    # has to win over that default.
+    it "files the card at the midpoint below the anchor instead of the top" do
+      run(valid_bug_argv + ["--after", "#10"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("pos" => 98_304.0))
+      ).to have_been_made.once
+    end
+
+    it "files the card at the bottom when the anchor is last" do
+      run(valid_bug_argv + ["--after", "#20"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("pos" => "bottom"))
+      ).to have_been_made.once
+    end
+
+    it "exits non-zero for an anchor in another list without creating a card" do
+      expect(run(valid_bug_argv + ["--after", "#99"])).to eq(1)
+
+      expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth)).not_to have_been_made
+    end
+
+    it "exits non-zero when --after and --position are both given" do
+      expect(run(valid_bug_argv + ["--after", "#10", "--position", "top"])).to eq(1)
+
+      expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth)).not_to have_been_made
+    end
+
+    # A card the validator refuses must cost nothing, anchor lookup included.
+    it "does not look up the anchor when the card fails validation" do
+      argv = ["bug", "new", "Bug: export times out", "--steps", "Open Reports",
+              "--expected", "CSV downloads.", "--actual", "Spinner hangs."]
+
+      expect(run(argv + ["--after", "#10"])).to eq(1)
+
+      expect(a_request(:get, "https://api.trello.com/1/lists/list1/cards")).not_to have_been_made
+    end
+
+    it "offers --after on feature new as well" do
+      argv = ["feature", "new", "Filter the queue", "--what", "Reviewers filter the queue",
+              "--why", "They lose time scanning it",
+              "--done-when", "Given a shared queue", "When I filter by my name", "Then only my cards remain",
+              "--after", "#10"]
+
+      expect(run(argv)).to eq(0)
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("pos" => 98_304.0))
+      ).to have_been_made.once
+    end
+
+    it "offers --after on chore new as well" do
+      argv = ["chore", "new", "Drop the dead table", "--what", "Remove the table and its model",
+              "--why-now", "It blocks the schema change", "--done-when", "The table is gone",
+              "--after", "#10"]
+
+      expect(run(argv)).to eq(0)
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("pos" => 98_304.0))
+      ).to have_been_made.once
+    end
+  end
 end
