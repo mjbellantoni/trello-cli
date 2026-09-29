@@ -118,6 +118,14 @@ RSpec.describe "card move" do
     expect(a_request(:put, %r{https://api\.trello\.com/1/cards/})).not_to have_been_made
   end
 
+  it "refuses an empty anchor with an error line, and moves nothing" do
+    output, status = move("#7", "Doing", "--after", "")
+
+    expect(status).to eq(1)
+    expect(output).to include("Error:")
+    expect(put_request).not_to have_been_made
+  end
+
   it "refuses --after together with --position, and moves nothing" do
     output, status = move("#7", "Doing", "--after", "#10", "--position", "top")
 

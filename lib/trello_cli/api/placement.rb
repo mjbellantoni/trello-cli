@@ -23,7 +23,7 @@ class TrelloCli::Api::Placement
 
   def initialize(client, config, list_name, after, moving)
     list = list_name || config.default_list
-    anchor_ref = TrelloCli::Api::CardRef.parse(after)
+    anchor_ref = parse_anchor(after)
     moving_ref = moving && TrelloCli::Api::CardRef.parse(moving)
     cards = TrelloCli::Api::List.cards(client, config, list, fields: CARD_FIELDS)
 
@@ -36,6 +36,14 @@ class TrelloCli::Api::Placement
   end
 
   private
+
+  # An unusable reference is caller error, not programmer error: CardRef says
+  # so with an ArgumentError, which no command rescues.
+  def parse_anchor(after)
+    TrelloCli::Api::CardRef.parse(after)
+  rescue ArgumentError => e
+    raise TrelloCli::Error, e.message
+  end
 
   # Trello spaces cards far apart, so the midpoint between two neighbours is
   # always a free slot between them. The card being moved is left out: its own
