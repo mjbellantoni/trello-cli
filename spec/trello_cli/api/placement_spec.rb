@@ -89,6 +89,14 @@ RSpec.describe TrelloCli::Api::Placement do
       expect(stub).to have_been_made.once
     end
 
+    # CardRef raises ArgumentError, which no command rescues; it has to reach
+    # the caller as the error the CLI knows how to print.
+    it "raises a CLI error for an empty anchor" do
+      expect {
+        described_class.resolve(client, config, "Doing", after: "")
+      }.to raise_error(TrelloCli::Error, /empty/)
+    end
+
     it "raises when the anchor is not in the target list" do
       expect {
         described_class.resolve(client, config, "Doing", after: "#99")
