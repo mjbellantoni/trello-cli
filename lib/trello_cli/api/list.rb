@@ -14,9 +14,11 @@ class TrelloCli::Api::List
     list
   end
 
-  def self.cards(client, config, name)
+  DEFAULT_CARD_FIELDS = "idShort,name,labels"
+
+  def self.cards(client, config, name, fields: DEFAULT_CARD_FIELDS)
     list = find_by_name(client, config, name)
-    client.get("/lists/#{list['id']}/cards", { fields: "idShort,name,labels" })
+    client.get("/lists/#{list['id']}/cards", { fields: fields })
   end
 
   # with_counts embeds each list's open cards in this same response. Counting

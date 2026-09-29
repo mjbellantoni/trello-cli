@@ -53,4 +53,36 @@ RSpec.describe TrelloCli::Api::List do
       expect(result.first["cards"].size).to eq(2)
     end
   end
+
+  describe ".cards" do
+    before do
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/lists")
+        .with(query: auth)
+        .to_return(status: 200, body: [{ "id" => "l1", "name" => "Doing" }].to_json,
+                   headers: { "Content-Type" => "application/json" })
+    end
+
+    it "asks for the fields the card listing renders" do
+      stub = stub_request(:get, "https://api.trello.com/1/lists/l1/cards")
+             .with(query: auth.merge(fields: "idShort,name,labels"))
+             .to_return(status: 200, body: [].to_json,
+                        headers: { "Content-Type" => "application/json" })
+
+      described_class.cards(client, config, "Doing")
+
+      expect(stub).to have_been_made.once
+    end
+
+    it "asks for the fields the caller names" do
+      stub = stub_request(:get, "https://api.trello.com/1/lists/l1/cards")
+             .with(query: auth.merge(fields: "idShort,shortLink,pos"))
+             .to_return(status: 200, body: [{ "id" => "c1", "idShort" => 42, "pos" => 1.0 }].to_json,
+                        headers: { "Content-Type" => "application/json" })
+
+      result = described_class.cards(client, config, "Doing", fields: "idShort,shortLink,pos")
+
+      expect(stub).to have_been_made.once
+      expect(result.first["pos"]).to eq(1.0)
+    end
+  end
 end

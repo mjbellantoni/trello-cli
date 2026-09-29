@@ -18,6 +18,14 @@ class TrelloCli::Api::CardRef
     parse_input
   end
 
+  # A card fetched from a list carries both identifiers, so one ref can be
+  # tested against it without spending a request to resolve the ref first.
+  def matches?(card)
+    return card["idShort"] == card_number if card_number
+
+    [card["shortLink"], card["id"]].include?(short_link)
+  end
+
   def to_api_id(client, config)
     if short_link
       short_link

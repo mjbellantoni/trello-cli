@@ -45,6 +45,7 @@ RSpec.describe "card new" do
     original = $stdout
     $stdout = out
     TrelloCli::Cli.start(argv)
+    out.string
   ensure
     $stdout = original
   end
@@ -111,5 +112,53 @@ RSpec.describe "card new" do
 
     expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth))
       .not_to have_been_made
+  end
+
+  describe "--after" do
+    before do
+      stub_request(:get, "https://api.trello.com/1/lists/list1/cards")
+        .with(query: auth.merge(fields: "idShort,shortLink,pos"))
+        .to_return(status: 200,
+                   body: [{ "id" => "c1", "idShort" => 10, "shortLink" => "aaa111", "pos" => 65_536.0 },
+                          { "id" => "c2", "idShort" => 20, "shortLink" => "bbb222", "pos" => 131_072.0 }].to_json,
+                   headers: { "Content-Type" => "application/json" })
+    end
+
+    it "creates the card at the midpoint below the anchor" do
+      run(["card", "new", "A card", "--after", "#10"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("pos" => 98_304.0))
+      ).to have_been_made.once
+    end
+
+    it "creates the card at the bottom when the anchor is last" do
+      run(["card", "new", "A card", "--after", "#20"])
+
+      expect(
+        a_request(:post, "https://api.trello.com/1/cards")
+          .with(query: auth, body: hash_including("pos" => "bottom"))
+      ).to have_been_made.once
+    end
+
+    it "reports where the card landed" do
+      output = run(["card", "new", "A card", "--after", "#10"])
+
+      expect(output).to include("Placed after #10")
+    end
+
+    it "reports an anchor that is in another list and creates nothing" do
+      expect { run(["card", "new", "A card", "--after", "#99"]) }.to raise_error(SystemExit)
+
+      expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth)).not_to have_been_made
+    end
+
+    it "rejects --after together with --position and creates nothing" do
+      expect { run(["card", "new", "A card", "--after", "#10", "--position", "top"]) }
+        .to raise_error(SystemExit)
+
+      expect(a_request(:post, "https://api.trello.com/1/cards").with(query: auth)).not_to have_been_made
+    end
   end
 end
