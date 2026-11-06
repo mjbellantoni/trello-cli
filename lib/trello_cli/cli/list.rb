@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 class TrelloCli::Cli::List < Thor
   def self.exit_on_failure?
     true
@@ -45,11 +47,9 @@ class TrelloCli::Cli::List < Thor
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
 
-    cards = if options[:json] || options[:all]
-              TrelloCli::Api::List.detailed_cards(client, config, name: name)
-            else
-              TrelloCli::Api::List.cards(client, config, name)
-            end
+    # NAME or --all says which cards; --json alone says how much of each.
+    params = options[:json] ? TrelloCli::Api::List::DETAIL_PARAMS : TrelloCli::Api::List::SUMMARY_PARAMS
+    cards = TrelloCli::Api::List.cards_in_board_order(client, config, name: name, params: params)
 
     if options[:with_label]
       label = options[:with_label].dup.force_encoding("UTF-8").downcase

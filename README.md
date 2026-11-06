@@ -224,8 +224,8 @@ value:
   "attachments": [{"name": "log.txt", "url": "https://…"}]}]
 ```
 
-Cards come in board order: lists left to right, then top to bottom. `due` is
-UTC. Comments are left out, because Trello cannot include them in a many-card
+Cards come in board order: lists left to right, then top to bottom. Archived
+cards are not included. `due` is UTC. Comments are left out, because Trello cannot include them in a many-card
 read. Use `card show REF` for a card's comments. `--json` cannot be combined
 with `--format`.
 

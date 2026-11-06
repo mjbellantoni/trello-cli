@@ -62,17 +62,6 @@ RSpec.describe TrelloCli::Api::List do
                    headers: { "Content-Type" => "application/json" })
     end
 
-    it "asks for the fields the card listing renders" do
-      stub = stub_request(:get, "https://api.trello.com/1/lists/l1/cards")
-             .with(query: auth.merge(fields: "idShort,name,labels"))
-             .to_return(status: 200, body: [].to_json,
-                        headers: { "Content-Type" => "application/json" })
-
-      described_class.cards(client, config, "Doing")
-
-      expect(stub).to have_been_made.once
-    end
-
     it "asks for the fields the caller names" do
       stub = stub_request(:get, "https://api.trello.com/1/lists/l1/cards")
              .with(query: auth.merge(fields: "idShort,shortLink,pos"))
@@ -86,7 +75,7 @@ RSpec.describe TrelloCli::Api::List do
     end
   end
 
-  describe ".detailed_cards" do
+  describe ".cards_in_board_order" do
     let(:detail_query) do
       auth.merge(fields: "idShort,name,desc,due,dueComplete,labels,shortUrl,idList,pos",
                  checklists: "all", members: "true", member_fields: "fullName,username",
@@ -109,7 +98,7 @@ RSpec.describe TrelloCli::Api::List do
     it "reads every card on the board in two requests" do
       cards_stub = stub_get("/boards/test_board/cards", detail_query, [])
 
-      described_class.detailed_cards(client, config)
+      described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
 
       expect(lists_stub).to have_been_made.once
       expect(cards_stub).to have_been_made.once
@@ -121,7 +110,7 @@ RSpec.describe TrelloCli::Api::List do
                 { "idShort" => 2, "idList" => "l1", "pos" => 20 },
                 { "idShort" => 1, "idList" => "l1", "pos" => 10 }])
 
-      result = described_class.detailed_cards(client, config)
+      result = described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
 
       expect(result.map { |c| c["idShort"] }).to eq([1, 2, 3])
     end
@@ -129,7 +118,7 @@ RSpec.describe TrelloCli::Api::List do
     it "names each card's list the way a single card read does" do
       stub_get("/boards/test_board/cards", detail_query, [{ "idShort" => 1, "idList" => "l2", "pos" => 1 }])
 
-      result = described_class.detailed_cards(client, config)
+      result = described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
 
       expect(result.first["list"]).to eq({ "id" => "l2", "name" => "Done" })
     end
@@ -137,14 +126,34 @@ RSpec.describe TrelloCli::Api::List do
     it "reads only the named list's cards when given a name" do
       cards_stub = stub_get("/lists/l2/cards", detail_query, [{ "idShort" => 1, "idList" => "l2", "pos" => 1 }])
 
-      result = described_class.detailed_cards(client, config, name: "Done")
+      result = described_class.cards_in_board_order(client, config, name: "Done", params: described_class::DETAIL_PARAMS)
 
       expect(cards_stub).to have_been_made.once
       expect(result.map { |c| c["list"]["name"] }).to eq(["Done"])
     end
 
+    it "asks only for the fields a line of output needs unless told otherwise" do
+      cards_stub = stub_get("/boards/test_board/cards", auth.merge(fields: "idShort,name,labels,idList,pos"), [])
+
+      described_class.cards_in_board_order(client, config)
+
+      expect(cards_stub).to have_been_made.once
+    end
+
+    # Trello can return a card whose list is not among the open ones. It is
+    # kept rather than dropped, after every card whose list is known.
+    it "puts a card on an unknown list last, with no list" do
+      stub_get("/boards/test_board/cards", detail_query,
+               [{ "idShort" => 1, "idList" => "gone", "pos" => 1 },
+                { "idShort" => 2, "idList" => "l2", "pos" => 9 }])
+
+      result = described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
+
+      expect(result.map { |c| [c["idShort"], c["list"]] }).to eq([[2, { "id" => "l2", "name" => "Done" }], [1, nil]])
+    end
+
     it "reports a named list that is not on the board" do
-      expect { described_class.detailed_cards(client, config, name: "Someday") }
+      expect { described_class.cards_in_board_order(client, config, name: "Someday") }
         .to raise_error(TrelloCli::NotFoundError, "List not found: Someday")
     end
   end

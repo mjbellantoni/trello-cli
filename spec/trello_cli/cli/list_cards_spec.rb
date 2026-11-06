@@ -27,9 +27,12 @@ RSpec.describe "list cards" do
       .to_return(json_response([{ "id" => "l1", "name" => "Doing" }, { "id" => "l2", "name" => "Done" }]))
   end
 
+  # A plain read asks only for what its lines print, plus what orders them.
+  let(:summary_query) { auth.merge(fields: "idShort,name,labels,idList,pos") }
+
   def stub_cards(cards)
     stub_request(:get, "https://api.trello.com/1/lists/l1/cards")
-      .with(query: auth.merge(fields: "idShort,name,labels"))
+      .with(query: summary_query)
       .to_return(json_response(cards))
   end
 
@@ -132,10 +135,29 @@ RSpec.describe "list cards" do
       expect(JSON.parse(output).map { |c| [c["number"], c["list"]] }).to eq([[7, "Doing"], [9, "Done"]])
     end
 
+    # The lines need no checklists, members or attachments, so a plain
+    # --all must not pay to fetch them for every card on the board.
     it "prints every card on the board as lines with --all alone" do
-      stub_detail("/boards/test_board/cards", detailed)
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/cards")
+        .with(query: summary_query)
+        .to_return(json_response(detailed))
 
       expect(run("--all")).to eq(["#7 Fix login\n#9 Ship it\n", 0])
+    end
+
+    it "prints only numbers with --all --format id" do
+      stub_request(:get, "https://api.trello.com/1/boards/test_board/cards")
+        .with(query: summary_query)
+        .to_return(json_response(detailed))
+
+      expect(run("--all", "--format", "id")).to eq(["#7\n#9\n", 0])
+    end
+
+    it "reports a list that is not on the board with --json" do
+      output, status = run("Someday", "--json")
+
+      expect(output).to include("Error: List not found: Someday")
+      expect(status).to eq(1)
     end
 
     it "applies the label filters before printing JSON" do
