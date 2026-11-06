@@ -21,15 +21,8 @@ class TrelloCli::Api::List
   end
 
   # What a line of output prints, plus what puts the cards in board order.
+  # For everything a card carries, pass TrelloCli::Api::Card::DETAIL_PARAMS.
   SUMMARY_PARAMS = { fields: "idShort,name,labels,idList,pos" }.freeze
-
-  # Everything card show prints but comments.
-  DETAIL_PARAMS = {
-    fields: "idShort,name,desc,due,dueComplete,labels,shortUrl,idList,pos",
-    checklists: "all",
-    members: "true", member_fields: "fullName,username",
-    attachments: "true", attachment_fields: "name,url"
-  }.freeze
 
   # The named list's cards, or with no name every card on the board, each
   # carrying its list's id and name as a single card read does. The cards

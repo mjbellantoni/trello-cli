@@ -48,7 +48,7 @@ class TrelloCli::Cli::List < Thor
     client = TrelloCli::Api::Client.new(config)
 
     # NAME or --all says which cards; --json alone says how much of each.
-    params = options[:json] ? TrelloCli::Api::List::DETAIL_PARAMS : TrelloCli::Api::List::SUMMARY_PARAMS
+    params = options[:json] ? TrelloCli::Api::Card::DETAIL_PARAMS : TrelloCli::Api::List::SUMMARY_PARAMS
     cards = TrelloCli::Api::List.cards_in_board_order(client, config, name: name, params: params)
 
     if options[:with_label]

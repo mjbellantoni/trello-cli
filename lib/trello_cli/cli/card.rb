@@ -14,7 +14,7 @@ class TrelloCli::Cli::Card < Thor
   def self.due_line(card)
     due = Time.parse(card["due"]).getlocal
     text = due.strftime(DUE_FORMAT)
-    return "#{text} (complete)" if card["dueComplete"]
+    return "#{text} (complete)" if card["due_complete"]
     return "#{text} (overdue)" if due < Time.now
 
     text
@@ -108,51 +108,41 @@ class TrelloCli::Cli::Card < Thor
     client = TrelloCli::Api::Client.new(config)
 
     card = TrelloCli::Api::Card.find(client, config, ref)
+    # Printed from the same description list cards --json emits, so the two
+    # cannot drift. Comments are the one part only this read carries.
+    shown = TrelloCli::CardJson.from(card)
 
-    say card["name"], :bold
-    say "URL: #{card['shortUrl']}"
-    say "List: #{card['list']['name']}" if card["list"]
-    say "Due: #{self.class.due_line(card)}" if card["due"]
-
-    if card["members"]&.any?
-      say "Members: #{card['members'].map { |m| TrelloCli::Api::Member.display_name(m) }.join(', ')}"
-    end
+    say shown["name"], :bold
+    say "URL: #{shown['url']}"
+    say "List: #{shown['list']}" if shown["list"]
+    say "Due: #{self.class.due_line(shown)}" if shown["due"]
+    say "Members: #{shown['members'].join(', ')}" if shown["members"].any?
 
     say ""
 
-    if card["labels"]&.any?
-      labels = card["labels"].map { |l| l["name"] }.join(", ")
-      say "Labels: #{labels}"
-    end
+    say "Labels: #{shown['labels'].join(', ')}" if shown["labels"].any?
 
-    if card["desc"] && !card["desc"].empty?
+    unless shown["description"].empty?
       say ""
       say "Description:"
-      say card["desc"]
+      say shown["description"]
     end
 
-    if card["checklists"]&.any?
+    if shown["checklists"].any?
       say ""
       say "Checklists:"
-      card["checklists"].each do |checklist|
-        items = checklist["checkItems"] || []
-        completed = items.count { |i| i["state"] == "complete" }
-        total = items.size
-        progress = total.positive? ? "(#{completed}/#{total})" : ""
+      shown["checklists"].each do |checklist|
+        items = checklist["items"]
+        progress = items.any? ? "(#{items.count { |i| i['complete'] }}/#{items.size})" : ""
         say "  #{checklist['name']}: #{progress}"
-        items.sort_by { |i| i["pos"] || 0 }.each do |item|
-          status = item["state"] == "complete" ? "[x]" : "[ ]"
-          say "    #{status} #{item['name']}"
-        end
+        items.each { |item| say "    #{item['complete'] ? '[x]' : '[ ]'} #{item['name']}" }
       end
     end
 
-    if card["attachments"]&.any?
+    if shown["attachments"].any?
       say ""
       say "Attachments:"
-      card["attachments"].each do |att|
-        say "  - #{att['name']}"
-      end
+      shown["attachments"].each { |att| say "  - #{att['name']}" }
     end
 
     if card["actions"]&.any?
