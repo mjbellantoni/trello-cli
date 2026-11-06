@@ -52,13 +52,21 @@ class TrelloCli::Api::Card
     client.put("/cards/#{card_id}", { closed: true })
   end
 
+  # The card details this CLI reads, whether for one card or many: what
+  # CardJson carries, and so what card show and list cards --json print.
+  DETAIL_PARAMS = {
+    fields: "idShort,name,desc,due,dueComplete,labels,shortUrl,idList,pos",
+    checklists: "all",
+    members: "true", member_fields: "fullName,username",
+    attachments: "true", attachment_fields: "name,url"
+  }.freeze
+
+  # The list's name and the comments ride along on this request rather than
+  # costing their own. Only a single-card read can embed them.
   def self.find(client, config, card_ref)
     ref = card_ref.is_a?(TrelloCli::Api::CardRef) ? card_ref : TrelloCli::Api::CardRef.parse(card_ref)
     card_id = ref.to_api_id(client, config)
-    # list and members ride along on this request rather than costing their own.
-    client.get("/cards/#{card_id}",
-               { checklists: "all", attachments: "true", actions: "commentCard",
-                 list: "true", members: "true" })
+    client.get("/cards/#{card_id}", DETAIL_PARAMS.merge(list: "true", actions: "commentCard"))
   end
 
   def self.create(client, config, title:, description: nil, list: nil, labels: [], position: nil, due: nil)

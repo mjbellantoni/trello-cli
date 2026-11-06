@@ -98,7 +98,7 @@ RSpec.describe TrelloCli::Api::List do
     it "reads every card on the board in two requests" do
       cards_stub = stub_get("/boards/test_board/cards", detail_query, [])
 
-      described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
+      described_class.cards_in_board_order(client, config, params: TrelloCli::Api::Card::DETAIL_PARAMS)
 
       expect(lists_stub).to have_been_made.once
       expect(cards_stub).to have_been_made.once
@@ -110,7 +110,7 @@ RSpec.describe TrelloCli::Api::List do
                 { "idShort" => 2, "idList" => "l1", "pos" => 20 },
                 { "idShort" => 1, "idList" => "l1", "pos" => 10 }])
 
-      result = described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
+      result = described_class.cards_in_board_order(client, config, params: TrelloCli::Api::Card::DETAIL_PARAMS)
 
       expect(result.map { |c| c["idShort"] }).to eq([1, 2, 3])
     end
@@ -118,7 +118,7 @@ RSpec.describe TrelloCli::Api::List do
     it "names each card's list the way a single card read does" do
       stub_get("/boards/test_board/cards", detail_query, [{ "idShort" => 1, "idList" => "l2", "pos" => 1 }])
 
-      result = described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
+      result = described_class.cards_in_board_order(client, config, params: TrelloCli::Api::Card::DETAIL_PARAMS)
 
       expect(result.first["list"]).to eq({ "id" => "l2", "name" => "Done" })
     end
@@ -126,7 +126,7 @@ RSpec.describe TrelloCli::Api::List do
     it "reads only the named list's cards when given a name" do
       cards_stub = stub_get("/lists/l2/cards", detail_query, [{ "idShort" => 1, "idList" => "l2", "pos" => 1 }])
 
-      result = described_class.cards_in_board_order(client, config, name: "Done", params: described_class::DETAIL_PARAMS)
+      result = described_class.cards_in_board_order(client, config, name: "Done", params: TrelloCli::Api::Card::DETAIL_PARAMS)
 
       expect(cards_stub).to have_been_made.once
       expect(result.map { |c| c["list"]["name"] }).to eq(["Done"])
@@ -147,7 +147,7 @@ RSpec.describe TrelloCli::Api::List do
                [{ "idShort" => 1, "idList" => "gone", "pos" => 1 },
                 { "idShort" => 2, "idList" => "l2", "pos" => 9 }])
 
-      result = described_class.cards_in_board_order(client, config, params: described_class::DETAIL_PARAMS)
+      result = described_class.cards_in_board_order(client, config, params: TrelloCli::Api::Card::DETAIL_PARAMS)
 
       expect(result.map { |c| [c["idShort"], c["list"]] }).to eq([[2, { "id" => "l2", "name" => "Done" }], [1, nil]])
     end

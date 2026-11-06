@@ -9,8 +9,13 @@ require "trello_cli/cli"
 # silently.
 RSpec.describe "card show" do
   let(:auth) { { key: "test_key", token: "test_token" } }
+  # The card fields list cards --json reads, plus what only a single-card read
+  # can embed: the list's name and the comments.
   let(:find_query) do
-    auth.merge(checklists: "all", attachments: "true", actions: "commentCard", list: "true", members: "true")
+    auth.merge(fields: "idShort,name,desc,due,dueComplete,labels,shortUrl,idList,pos",
+               checklists: "all", members: "true", member_fields: "fullName,username",
+               attachments: "true", attachment_fields: "name,url",
+               list: "true", actions: "commentCard")
   end
 
   around do |example|
