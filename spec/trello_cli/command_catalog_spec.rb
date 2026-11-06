@@ -147,6 +147,14 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(cmd["examples"]).to eq(["trello list cards NAME"])
     end
 
+    # A caller reading the catalog learns a command can emit JSON from here,
+    # not by trying the flag.
+    it "lists json among the outputs of a command with --json" do
+      outputs = catalog["commands"].to_h { |c| [c["name"], c["outputs"]] }
+      expect(outputs["list cards"]).to eq(%w[text json])
+      expect(outputs["list all"]).to eq(["text"])
+    end
+
     it "includes label new with a required color enum" do
       cmd = catalog["commands"].find { |c| c["name"] == "label new" }
       expect(cmd).not_to be_nil
