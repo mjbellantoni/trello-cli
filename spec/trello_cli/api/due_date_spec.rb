@@ -111,7 +111,11 @@ RSpec.describe TrelloCli::Api::DueDate do
     end
   end
 
+  # 16:00Z is noon only while New York is on EDT, so against the real
+  # clock this failed every winter. The stub pins it to the September now.
   it "defaults now to the current time" do
-    expect(described_class.parse("today")).to eq("#{Time.now.strftime('%Y-%m-%d')}T16:00:00Z")
+    allow(Time).to receive(:now).and_return(now)
+
+    expect(described_class.parse("today")).to eq("2026-09-09T16:00:00Z")
   end
 end
