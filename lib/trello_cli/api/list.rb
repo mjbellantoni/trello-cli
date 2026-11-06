@@ -48,6 +48,10 @@ class TrelloCli::Api::List
     rank = lists.each_with_index.to_h { |l, i| [l["id"], i] }
     by_id = lists.to_h { |l| [l["id"], l.slice("id", "name")] }
 
+    # pos is read leniently on purpose: it only orders what is printed, and a
+    # listing of the whole board must not fail over one card's position.
+    # Placement#pos_of is strict because it does arithmetic with pos and
+    # writes the result back, where a bad value would misplace a card.
     cards.sort_by { |c| [rank.fetch(c["idList"], lists.size), c["pos"].to_f] }
          .map { |c| c.merge("list" => by_id[c["idList"]]) }
   end
