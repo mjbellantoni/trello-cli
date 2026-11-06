@@ -28,3 +28,5 @@ require_relative "trello_cli/api/label"
 require_relative "trello_cli/api/attachment"
 require_relative "trello_cli/api/comment"
 require_relative "trello_cli/api/checklist"
+
+require_relative "trello_cli/card_json"

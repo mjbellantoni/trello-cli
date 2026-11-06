@@ -195,7 +195,39 @@ trello list cards "Doing" --format id-name
 trello list cards "Doing" --with-label "Bug"
 trello list cards "Doing" --without-label "Bug"
 trello list cards "Doing" --with-label "Bug" --format id
+trello list cards --all                   # every card on the board, list by list
 ```
+
+#### Reading many cards at once
+
+`--json` prints each card's details as one JSON array, so a script can read a
+whole list, or with `--all` the whole board, in two requests rather than one
+`card show` per card:
+
+```bash
+trello list cards "Doing" --json
+trello list cards --all --json
+trello list cards --all --json --with-label "Bug"
+trello list cards --all --json | jq -r '.[] | select(.due != null) | "#\(.number) \(.due)"'
+```
+
+Every card has every key, with `null`, `false`, `""` or `[]` when it has no
+value:
+
+```json
+[{"number": 42, "name": "Fix login", "list": "Doing",
+  "url": "https://trello.com/c/abc123",
+  "due": "2026-11-10T17:00:00.000Z", "due_complete": false,
+  "labels": ["Bug"], "members": ["Matthew B"],
+  "description": "Steps to reproduce…",
+  "checklists": [{"name": "Steps", "items": [{"name": "Reproduce", "complete": true}]}],
+  "attachments": [{"name": "log.txt", "url": "https://…"}]}]
+```
+
+Cards come in board order: lists left to right, then top to bottom. `due` is
+UTC. Comments are left out, because Trello cannot include them in a many-card
+read. Use `card show REF` for a card's comments. `--json` cannot be combined
+with `--format`.
 
 ### Attachments
 

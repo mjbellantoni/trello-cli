@@ -87,8 +87,9 @@ module TrelloCli
 
     def parse_args(usage)
       parts = usage.split[1..] || []
-      parts.select { |p| p.match?(/\A[A-Z]/) }.map do |arg|
-        { "name" => arg, "required" => true }
+      parts.filter_map do |part|
+        match = part.match(/\A(\[)?([A-Z][A-Z_]*)\]?\z/)
+        match && { "name" => match[2], "required" => match[1].nil? }
       end
     end
   end
