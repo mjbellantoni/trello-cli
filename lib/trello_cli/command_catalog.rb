@@ -38,7 +38,7 @@ module TrelloCli
             "examples" => [build_example(canonical, args, opts)],
             "name" => canonical,
             "options" => opts,
-            "outputs" => ["text"],
+            "outputs" => command.options.key?(:json) ? %w[text json] : ["text"],
             "summary" => command.description
           }
         end
