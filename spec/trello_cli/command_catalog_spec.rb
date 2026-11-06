@@ -139,6 +139,14 @@ RSpec.describe TrelloCli::CommandCatalog do
       expect(without_opt["type"]).to eq("string")
     end
 
+    # NAME is optional because --all stands in for it. Dropping it from the
+    # catalog would leave callers with no way to learn the usual form.
+    it "lists the bracketed NAME of list cards as an optional arg" do
+      cmd = catalog["commands"].find { |c| c["name"] == "list cards" }
+      expect(cmd["args"]).to eq([{ "name" => "NAME", "required" => false }])
+      expect(cmd["examples"]).to eq(["trello list cards NAME"])
+    end
+
     it "includes label new with a required color enum" do
       cmd = catalog["commands"].find { |c| c["name"] == "label new" }
       expect(cmd).not_to be_nil

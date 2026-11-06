@@ -93,4 +93,85 @@ RSpec.describe "list cards" do
     expect(output).to include("Error: List not found: Someday")
     expect(status).to eq(1)
   end
+
+  describe "reading cards in detail" do
+    let(:detail_query) do
+      auth.merge(fields: "idShort,name,desc,due,dueComplete,labels,shortUrl,idList,pos",
+                 checklists: "all", members: "true", member_fields: "fullName,username",
+                 attachments: "true", attachment_fields: "name,url")
+    end
+
+    let(:detailed) do
+      [{ "idShort" => 7, "name" => "Fix login", "idList" => "l1", "pos" => 1, "shortUrl" => "u7",
+         "desc" => "Broken on Safari", "labels" => [{ "name" => "Bug" }] },
+       { "idShort" => 9, "name" => "Ship it", "idList" => "l2", "pos" => 1, "shortUrl" => "u9",
+         "desc" => "", "labels" => [] }]
+    end
+
+    def stub_detail(path, cards)
+      stub_request(:get, "https://api.trello.com/1#{path}")
+        .with(query: detail_query)
+        .to_return(json_response(cards))
+    end
+
+    it "prints the named list's cards as a JSON array with --json" do
+      stub_detail("/lists/l1/cards", [detailed.first])
+
+      output, status = run("Doing", "--json")
+
+      expect(status).to eq(0)
+      expect(JSON.parse(output)).to match([include("number" => 7, "list" => "Doing", "description" => "Broken on Safari",
+                                                   "labels" => ["Bug"])])
+    end
+
+    it "prints every card on the board with --all --json" do
+      stub_detail("/boards/test_board/cards", detailed)
+
+      output, = run("--all", "--json")
+
+      expect(JSON.parse(output).map { |c| [c["number"], c["list"]] }).to eq([[7, "Doing"], [9, "Done"]])
+    end
+
+    it "prints every card on the board as lines with --all alone" do
+      stub_detail("/boards/test_board/cards", detailed)
+
+      expect(run("--all")).to eq(["#7 Fix login\n#9 Ship it\n", 0])
+    end
+
+    it "applies the label filters before printing JSON" do
+      stub_detail("/boards/test_board/cards", detailed)
+
+      output, = run("--all", "--json", "--without-label", "bug")
+
+      expect(JSON.parse(output).map { |c| c["number"] }).to eq([9])
+    end
+
+    it "prints an empty array when no card matches" do
+      stub_detail("/lists/l1/cards", [])
+
+      expect(run("Doing", "--json")).to eq(["[]\n", 0])
+    end
+
+    it "refuses a list name together with --all" do
+      output, status = run("Doing", "--all")
+
+      expect(output).to include("Error: give a list NAME or --all, not both")
+      expect(status).to eq(1)
+    end
+
+    it "asks for a list name or --all when given neither" do
+      output, status = run
+
+      expect(output).to include("Error: give a list NAME or --all")
+      expect(status).to eq(1)
+    end
+
+    # --format picks among plain-text layouts; JSON has only one.
+    it "refuses --format together with --json" do
+      output, status = run("Doing", "--json", "--format", "id")
+
+      expect(output).to include("Error: --format and --json are mutually exclusive")
+      expect(status).to eq(1)
+    end
+  end
 end
