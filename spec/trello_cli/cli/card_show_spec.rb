@@ -44,11 +44,11 @@ RSpec.describe "card show" do
   end
 
   # Runs the CLI the way a caller does, capturing what it prints.
-  def show(ref = "#451")
+  def show(ref = "#451", *flags)
     out = StringIO.new
     original = $stdout
     $stdout = out
-    TrelloCli::Cli.start(["card", "show", ref])
+    TrelloCli::Cli.start(["card", "show", ref, *flags])
     out.string
   ensure
     $stdout = original
@@ -244,6 +244,24 @@ RSpec.describe "card show" do
     # current behaviour, and anything appended after it would land on this line.
     it "renders the checklist name with an empty, unterminated progress counter" do
       expect(show).to eq("Empty checklist\nURL: https://trello.com/c/empty123\n\n\nChecklists:\n  Steps: ")
+    end
+  end
+
+  # The text leaves out the card's number, which a script needs to name an
+  # archived card that no list cards --json read holds.
+  describe "--json" do
+    before do
+      stub_card("idShort" => 451, "name" => "Archived step", "shortUrl" => "https://trello.com/c/arch1234",
+                "labels" => [{ "name" => "chore" }],
+                "actions" => [{ "date" => "2026-08-14T10:00:00.000Z", "data" => { "text" => "a comment" } }])
+    end
+
+    it "prints the card as the one JSON object list cards --json emits for it" do
+      expect(JSON.parse(show("#451", "--json"))).to eq(
+        "number" => 451, "name" => "Archived step", "list" => nil, "url" => "https://trello.com/c/arch1234",
+        "due" => nil, "due_complete" => false, "labels" => ["chore"], "members" => [], "description" => "",
+        "checklists" => [], "attachments" => []
+      )
     end
   end
 

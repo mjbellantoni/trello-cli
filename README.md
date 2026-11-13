@@ -54,6 +54,11 @@ trello card update #123 -t "New title"
 `card show` reports the card's current list and assigned members, so a
 `card move` or `card assign` can be verified without going to the API.
 
+`card show REF --json` prints the card as one JSON object, the same object
+`list cards --json` prints for it. The object carries the card's `number`,
+which the text leaves out. It reads an archived card too, which no
+`list cards` read includes. Comments are left out of the JSON.
+
 ### Placing a card after another
 
 `--after` (`-a`) puts the card directly below a card already in the target

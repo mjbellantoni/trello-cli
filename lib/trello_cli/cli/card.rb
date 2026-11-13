@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "json"
 require "time"
 
 class TrelloCli::Cli::Card < Thor
@@ -103,6 +104,8 @@ class TrelloCli::Cli::Card < Thor
   end
 
   desc "show REF", "Show card details"
+  option :json, type: :boolean,
+                desc: "Print the card's details (everything but comments, plus its number) as a JSON object"
   def show(ref)
     config = TrelloCli::Api::Config.load
     client = TrelloCli::Api::Client.new(config)
@@ -111,6 +114,11 @@ class TrelloCli::Cli::Card < Thor
     # Printed from the same description list cards --json emits, so the two
     # cannot drift. Comments are the one part only this read carries.
     shown = TrelloCli::CardJson.from(card)
+
+    if options[:json]
+      puts JSON.generate(shown)
+      return
+    end
 
     say shown["name"], :bold
     say "URL: #{shown['url']}"
